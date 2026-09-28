@@ -20,7 +20,7 @@ It prints the element count, the full-paint chunk count, the artboard size, any 
 5. Review: screenshot the whole board, then each row at scale 1 (a whole-board screenshot is too small to read 12px labels). Fix problems in the spec, re-render, and sync.
 
 ## Sync (mode: sync)
-1. **Read the board:** `get_tree_summary(<artboard>, depth 1)`. Save it to `out/<board>/tree.txt`: either the whole result, or one line per child, `<node id> <layer name>`. Only the part of the name before ` · ` matters.
+1. **Read the board:** `get_tree_summary(<artboard>, depth 1)`. Save it to `out/<board>/tree.txt`. The shortest form is one line per child, `<node id> <board>:<key>`: leave out the rest of the name and the `... N children` lines.
    - Don't use `get_children` for this: it stops at 100 children, and `--drift` refuses a cut list.
 2. **Drift:** `python3 specs/<spec>.py --drift out/<board>/tree.txt`. This puts node ids into `out/<board>/sync/plan.json` and prints:
    - **unkeyed:** elements someone added by hand, with their node ids.
@@ -29,18 +29,18 @@ It prints the element count, the full-paint chunk count, the artboard size, any 
    - If drift shows hand edits, show them to the user before changing anything. They choose:
      - **keep:** fold the edit into the spec (a new node, a changed note), re-render, and run drift again;
      - **discard:** delete the unkeyed nodes (`delete_nodes`) along with the plan's deletes.
-3. **Run the ops** in `plan.json`, in this order, batching where the tool allows:
+3. **Run the ops.** `python3 design/user-flow/specs/_uf.py ops <board>` (add `--discard` to also delete the hand-added nodes) prints every call below with its arguments ready to paste, in order. What each step is:
    - `delete`: one `delete_nodes` call with every `node`.
    - `rename`: one `rename_nodes` call: `{nodeId: node, name: name}` for each. (The element didn't change, only its key.)
    - `replace`: `write_html(mode='replace', targetNodeId=node, html=<file>)`, one call each. Note the new node id it returns. `write_html(replace)` keeps the old node's position, so every replace also needs its `left`/`top` set (next step).
    - `move` and replaced positions: one `update_styles` call, one entry per node: `{nodeIds: [node], styles: {left: '<left>px', top: '<top>px'}}`. Use the new node ids for replaced elements.
    - `insert`: each `ins_NN.html` file with `write_html(mode='insert-children', targetNodeId=<artboard>)`.
    - If `size_changed`, set the artboard's width and height with `update_styles`.
-   - More than about 8 replaces: hand them to one subagent with the replace prompt below.
-4. **Check:** screenshot the areas that changed, then the whole board.
+   - 7 or more replaces: hand them to one subagent with the replace prompt below (the `ops` lines are its input).
+4. **Check:** screenshot each changed node at scale 1 (get_screenshot works per node). A whole-board screenshot is capped at 2000px, so use it only for layout, never to read labels.
 5. **Commit:** `python3 specs/<spec>.py --commit <artboard id>`.
 
-When the plan is `0 · 0 · 0 · 0 · 0`, there is nothing to paint. Still run drift if the board may have been edited by hand, and say so either way. No commit is needed.
+When the plan is all zero, there is nothing to paint. Still run drift if the board may have been edited by hand, and say so either way. Commit only if the plan line mentions a renderer change (`renderer 0.2.0 → 0.3.0`), so the board records the new version.
 
 If a target is missing (the warning in step 2), or more than about 70% of the elements are replaced or inserted, paint in full instead: delete the artboard's children, paste `full/`, commit.
 

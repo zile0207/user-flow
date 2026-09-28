@@ -83,10 +83,10 @@ class Map:
         return {'l': (x, cy), 'r': (x + w, cy), 't': (cx, y), 'b': (cx, y + h)}[side]
 
     # ---------------- edges
-    def e(self, pts, col='grey', dash=False, label=None, lp=None, lw=None, na=False):
+    def e(self, pts, col='grey', dash=False, label=None, lp=None, lw=None, na=False, key=None):
         """A routed arrow. pts = orthogonal waypoints. col 'coral' only on Jamie's path. dash = remembered for later / after MVP.
-        na=True: no arrowhead (the line merges into another line)."""
-        self.E.append(dict(p=[tuple(p) for p in pts], c=col, d=dash, l=label, lp=lp, lw=lw, na=na))
+        na=True: no arrowhead (the line merges into another line). key: a stable name, for lines that join no node (a bus)."""
+        self.E.append(dict(p=[tuple(p) for p in pts], c=col, d=dash, l=label, lp=lp, lw=lw, na=na, k=key))
 
     def h(self, a, b, col='grey', label=None, dash=False, lw=None, lp=None):
         p1 = self.c(a, 'r'); p2 = self.c(b, 'l')
@@ -176,11 +176,11 @@ class Map:
                         '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">' + t(g, 11, 14, 700, base.ACCENT, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK)
                         + t(f'Chosen: {d["chosen"]}, round {d["round"]}. See Explore · {g}.', 12, 16, 500, MUTED) + '</div></div>')
             if st == 'later':
-                tag = f'{g} · AFTER MVP'; bot = tag; tagc, bd, bg = '#6B7678', '#D3D8DA', '#FFFFFF'
+                tag = f'{g} · AFTER MVP'; bot = g; tagc, bd, bg = '#6B7678', '#D3D8DA', '#FFFFFF'
             elif st == 'exploring':
-                tag = f'{g} · EXPLORING'; bot = f'{g} · EXPLORING, ROUND {d["round"] or 1}'; tagc, bd, bg = AMBER, '#B4BDBF', '#FBFBFA'
+                tag = f'{g} · EXPLORING'; bot = f'{g} · ROUND {d["round"] or 1}'; tagc, bd, bg = AMBER, '#B4BDBF', '#FBFBFA'
             else:
-                tag = f'{g} · NEEDS DESIGN'; bot = f'{g} · TO DESIGN'; tagc, bd, bg = AMBER, '#B4BDBF', '#FBFBFA'
+                tag = f'{g} · NEEDS DESIGN'; bot = g; tagc, bd, bg = AMBER, '#B4BDBF', '#FBFBFA'
             return (f'<div layer-name="To design · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:{bg};border:1.5px dashed {bd};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
                     f'<div style="width:180px;height:390px;flex-shrink:0;border-radius:10px;background:#F1F3F3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;padding:20px;box-sizing:border-box">'
                     f'<div style="{base.F}font-size:10px;line-height:12px;font-weight:700;letter-spacing:0.08em;color:{tagc};background:#FFFFFF;border-radius:999px;padding:5px 9px;white-space:nowrap">{tag}</div>'
@@ -229,10 +229,14 @@ class Map:
         return None
 
     def _edge_key(self, ed):
+        """Named after the nodes it joins: e_<from>_<to>. An end on a line rather than a node reads 'bus'.
+        A line that touches no node needs key= to stay stable; without one it's keyed by its coordinates."""
+        if ed.get('k'):
+            return 'e_' + ed['k']
         a, b = self._at(ed['p'][0]), self._at(ed['p'][-1])
-        if a and b:
-            return f'e_{a}_{b}'
-        return 'e' + board.h(repr([(round(x), round(y)) for x, y in ed['p']]))[:8]   # joins a line, not a node
+        if a or b:
+            return f"e_{a or 'bus'}_{b or 'bus'}"
+        return 'e' + board.h(repr([(round(x), round(y)) for x, y in ed['p']]))[:8]
 
     def _label_box(self, ed):
         lab = ed['l']; lp = ed['lp']

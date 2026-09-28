@@ -55,7 +55,7 @@ Every render writes keyed elements, a full-paint set and a sync plan (see `sync.
 - **Colour:** `'coral'` is the persona's path (it renders in the project's accent colour). Everything else is grey.
 - **Dashed** means remembered for later, or after MVP.
 - **Labels** say what caused the step ("Taps Paste", "Yes", "About a minute"). Every exit of a decision is labelled, and so is any arrow whose cause isn't obvious from the two nodes. An arrow from a screen into the decision that follows it needs no label. Set `lw` so long labels wrap.
-- **Keys:** an arrow's key names the two nodes it joins (`e_d1_g3`), so moving nodes moves arrows instead of redrawing them. Keep node ids short and stable.
+- **Keys:** an arrow's key names the two nodes it joins (`e_d1_g3`; an end on a line reads `bus`: `e_bus_g3`), so moving nodes moves arrows instead of redrawing them. A line that touches no node (the bus itself) needs `key='bus_row3'` on `m.e(...)`, or it's keyed by its coordinates. Keep node ids short and stable.
 - `na=True`: no arrowhead. Use it for a stem into a bus, or a line merging into another line.
 - **Crossings:** arrows carry a white halo, so a crossing reads as a hop. Keep them rare.
 

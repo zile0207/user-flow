@@ -184,6 +184,31 @@ def test_on_path_marks_gaps_touched_by_the_persona_path():
     assert 'Next up: N1·1' in run(root, '_uf.py', 'status')
 
 
+def test_ops_prints_ready_calls():
+    root = fresh()
+    run(root, 'journey.py'); run(root, 'journey.py', '--commit', 'A-0')
+    edit(os.path.join(root, 'specs', 'journey.py'), "note='Done.'", "note='Done, for now.'")
+    edit(os.path.join(root, 'specs', 'journey.py'), "m.gap('g3', 1160, Y2", "m.gap('g3', 1200, Y2")
+    run(root, 'journey.py')
+    keys = [e[0] for e in json.load(open(os.path.join(root, 'boards', 'journey.json')))['elements']]
+    tree = os.path.join(root, 'out', 'tree.txt')
+    open(tree, 'w').write('\n'.join([f'{i + 10}B-0 journey:{k}' for i, k in enumerate(keys)] + ['99Z-0 hand note']))
+    assert 'ops have no node id' in run(root, '_uf.py', 'ops', 'journey', ok=False)
+    run(root, 'journey.py', '--drift', tree)
+    out = run(root, '_uf.py', 'ops', 'journey', '--discard')
+    assert '"99Z-0"' in out and 'write_html(mode="replace")' in out and '"left": "1200px"' in out and 'update_styles' in out, out
+
+
+def test_bus_ends_are_keyed_by_their_node():
+    root = fresh()
+    edit(os.path.join(root, 'specs', 'journey.py'), "if __name__ == '__main__':",
+         "m.e([m.c('g3', 'r'), (1500, m.c('g3', 'r')[1]), (1500, 300)], na=True)\n"
+         "m.e([(1500, 300), (1600, 300)], na=True, key='bus_top')\nif __name__ == '__main__':")
+    run(root, 'journey.py')
+    keys = [e[0] for e in json.load(open(os.path.join(root, 'out', 'journey', 'manifest.json')))['elements']]
+    assert 'e_g3_bus' in keys and 'e_bus_top' in keys, keys
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

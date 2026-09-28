@@ -11,6 +11,8 @@ set-gap <gap id> key=value …            numbers and true/false are JSON, anyth
 add-question <map id> <text> [--blocks N1·2,N1·3] [--about <text>]
 answer <q id> [<decision>] [--owner <who>] [--date <date>]
 add-rule copy|product <text>
+ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
+                                        (--discard also deletes the hand-added nodes drift found)
 """
 import json, os, re, subprocess, sys
 from . import board
@@ -144,6 +146,53 @@ def list_questions(P, args):
                 print(f"        → {q['decision']}")
 
 
+def ops(P, args):
+    discard = '--discard' in args
+    args = [a for a in args if a != '--discard']
+    name = args[0]
+    path = os.path.join(P.root, 'out', name, 'sync', 'plan.json')
+    plan = json.load(open(path))
+    if plan['mode'] != 'sync':
+        print(f'{name}: paint in full (out/{name}/full), see sync.md → First paint'); return
+    fid = P.cfg.get('sources', {}).get('paper', {}).get('file_id', '<file id>')
+    art = plan.get('artboard')
+    by = lambda k: [o for o in plan['ops'] if o['op'] == k]
+    if any(o.get('node') is None for o in plan['ops'] if o['op'] != 'insert'):
+        print('Run --drift first: some ops have no node id yet (or their element is gone: paint in full).'); sys.exit(2)
+    step = 0
+    def head(s):
+        nonlocal step; step += 1; print(f'\n{step}. {s}')
+    dels = [o['node'] for o in by('delete')] + (plan.get('unkeyed', []) if discard else [])
+    if dels:
+        head('delete_nodes')
+        print(json.dumps({'fileId': fid, 'nodeIds': dels}, ensure_ascii=False))
+    if by('rename'):
+        head('rename_nodes')
+        print(json.dumps({'fileId': fid, 'updates': [{'nodeId': o['node'], 'name': o['name']} for o in by('rename')]}, ensure_ascii=False))
+    reps = by('replace')
+    if reps:
+        head(f'replace: {len(reps)} × write_html(mode="replace"), one per line: <node id> <file> <left> <top>'
+             + (' · 7 or more: give these lines to the replace subagent (sync.md)' if len(reps) >= 7 else ''))
+        for o in reps:
+            print(f"{o['node']} {os.path.join(P.root, 'out', name, 'sync', o['file'])} {o.get('left')} {o.get('top')}")
+    moves = by('move')
+    if moves or reps:
+        head('update_styles: the moves below, plus one entry per replaced element (its NEW node id, the left/top above)')
+        print(json.dumps({'fileId': fid, 'updates': [{'nodeIds': [o['node']], 'styles': {'left': f"{o['left']}px", 'top': f"{o['top']}px"}} for o in moves]}, ensure_ascii=False))
+    ins = by('insert')
+    if ins:
+        head(f'insert: write_html(mode="insert-children", targetNodeId="{art}") with each file')
+        for o in ins:
+            print(os.path.join(P.root, 'out', name, 'sync', o['file']))
+    if plan.get('size_changed'):
+        head('artboard size: update_styles')
+        W, H = plan['size']
+        print(json.dumps({'fileId': fid, 'updates': [{'nodeIds': [art], 'styles': {'width': f'{W}px', 'height': f'{H}px'}}]}))
+    if not step:
+        print('nothing to paint')
+    print(f'\nThen: screenshot the changed nodes at scale 1, and `python3 specs/<spec>.py --commit {art}`.')
+
+
 def _val(v):
     try:
         return json.loads(v)
@@ -178,6 +227,8 @@ def main(P, argv):
         owner = _opt(args, '--owner'); date = _opt(args, '--date', '')
         P.answer(args[0], args[1] if len(args) > 1 else None, date, owner)
         print(json.dumps([q for q in P.questions() if q['id'] == args[0]][0], ensure_ascii=False))
+    elif cmd == 'ops':
+        ops(P, args)
     elif cmd == 'add-rule':
         P.add_rule(args[0], args[1])
         print(f"{args[0]} rules: {len(P.cfg['rules'][args[0]])}")

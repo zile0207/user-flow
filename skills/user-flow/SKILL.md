@@ -45,6 +45,7 @@ Next up: N1·1 Apple sign-in (no open gap on Jamie's path; first open gap)
 
 ## Routing rules
 Check these in order. The first that matches wins.
+0. **Several steps in one prompt** ("map everything then explore the first gap"): split it into steps, route each step with the rules below, and run them in order. After each map step, run its audit. "The first gap" means the status line's Next up; otherwise ask which gap.
 1. **Set up:** "set up", "init", "connect my Paper/Figma file", another app or repo → **init** (in that repo).
 2. **Hand-off:** "promote", "hand off", "publish", "to the devs", "developers can build" → **promote-design**, even when the prompt names a gap id.
 3. **Answers and decisions:** a Q id with an answer ("Q1·3: code"), "decide", "undecided", "open questions" → **answer-questions**.
@@ -58,7 +59,6 @@ Check these in order. The first that matches wins.
    - "map" + an area or section ("onboarding", "collecting") → **map-journey**. If a journey already covers that area, it updates that journey instead of making a new one.
    - "map" + a goal or job ("to plan a Saturday", "how Jamie plans a Saturday") → **map-flow**.
    - "redo", "re-lay out", "the arrows cross" on an existing map → **map-journey** (or map-flow) in update mode, then **sync-board**.
-10. **Several steps in one prompt** ("map everything then explore the first gap") run in order. After each map step, run its audit. "The first gap" means the status line's Next up; otherwise ask which gap.
 - Every skill that changes a spec or registry finishes with **sync-board** for the boards it touched. Say which boards those were.
 - **Unclear request:** ask one question with 2 to 4 options drawn from the table. Don't guess between two map levels.
 

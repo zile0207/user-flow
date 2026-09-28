@@ -1,0 +1,11 @@
+{
+  "project": "<App name>",
+  "theme": {"accent": "<brand colour, e.g. #E05254>", "font": "<font family>", "device": [390, 844]},
+  "sources": {
+    "paper": {"file_id": "<paper file id>", "screens_page": "<page id>", "maps_page": "<page id>"},
+    "figma": null,
+    "codebase": {"router": "<expo-router | next-app | react-navigation>", "routes": "<app>", "components": "<src/components>"}
+  },
+  "persona": {"name": "<Name>", "summary": "<one line: who they are and what they want>", "story_artboard": null},
+  "maps": {"master": null, "journeys": [], "flows": [], "explorations": []}
+}

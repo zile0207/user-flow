@@ -1,0 +1,5 @@
+interface:
+  display_name: "User Flow"
+  short_description: "Route to the right user-flow skill"
+policy:
+  allow_implicit_invocation: false

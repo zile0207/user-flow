@@ -1,0 +1,3 @@
+interface:
+  display_name: "Map Master"
+  short_description: "Plot every screen in the app, grouped by area"

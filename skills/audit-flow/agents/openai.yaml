@@ -1,0 +1,3 @@
+interface:
+  display_name: "Audit Flow"
+  short_description: "Find missing screens and add them as gaps"

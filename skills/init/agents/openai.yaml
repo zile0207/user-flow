@@ -1,0 +1,5 @@
+interface:
+  display_name: "Init"
+  short_description: "Set up user-flow in this project"
+policy:
+  allow_implicit_invocation: false

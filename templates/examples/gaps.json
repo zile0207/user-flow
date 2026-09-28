@@ -1,0 +1,184 @@
+{
+  "gaps": [
+    {
+      "id": "N1·1",
+      "map": "J1",
+      "title": "Apple sign-in",
+      "need": "Apple's sheet: share or hide the email. Cancel goes back to 5.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·2",
+      "map": "J1",
+      "title": "Email sign-in",
+      "need": "Email, then a code. Wrong code, expired code, send again.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·3",
+      "map": "J1",
+      "title": "Couldn't sign you in",
+      "need": "Google or Apple failed, or no signal. Try again, or pick another way in.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·4",
+      "map": "J1",
+      "title": "Welcome back, allow on this phone",
+      "need": "Returning account on a new phone. Skip interests, ask for location and alerts like 9, then Explore with their saves.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·5",
+      "map": "J1",
+      "title": "The phone asks: location",
+      "need": "iOS alert over 9 with Argo's reason. Reuse the A6·2 alert.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·6",
+      "map": "J1",
+      "title": "The phone asks: alerts",
+      "need": "Straight after location. Either answer goes on to 10.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·7",
+      "map": "J1",
+      "title": "Couldn't build the feed",
+      "need": "No signal or too slow. Try again, and show what did load.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·8",
+      "map": "J1",
+      "title": "First open, no interests",
+      "need": "Nothing picked on 8: Explore and plans stay generic until Argo learns what Jamie likes.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·9",
+      "map": "J1",
+      "title": "Saved, the top moves on",
+      "need": "Confirm the picks in the top, then back to the widget. Explore re-sorts.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·10",
+      "map": "J1",
+      "title": "New near you, with places",
+      "need": "Places open near you now. Check E1 first, it may be designed.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N1·11",
+      "map": "J1",
+      "title": "The quiz",
+      "need": "Planned, not in MVP. Until then A7·1 shows only Save these.",
+      "where": "",
+      "state": "later"
+    },
+    {
+      "id": "N1·12",
+      "map": "J1",
+      "title": "Location is off",
+      "need": "iOS won't ask again. New near you says how to turn it on in Settings.",
+      "where": "",
+      "state": "todo"
+    },
+    {
+      "id": "N2·1",
+      "map": "J2",
+      "title": "Share to Argo",
+      "need": "Argo's panel in the share sheet: sent, reading now. If the link won't work, say so there.",
+      "where": "Journey 2, row 2",
+      "state": "explored",
+      "chosen": "A",
+      "round": 1,
+      "img": "N2-1_A",
+      "board": "28V7-0"
+    },
+    {
+      "id": "N2·2",
+      "map": "J2",
+      "title": "The push: 7 places",
+      "need": "The notification, and where a tap lands: the top, open on the places.",
+      "where": "Journey 2, row 2",
+      "state": "todo"
+    },
+    {
+      "id": "N2·3",
+      "map": "J2",
+      "title": "Not a link Argo reads",
+      "need": "A website, a YouTube link, plain text. Say what works: TikTok and Instagram videos.",
+      "where": "Journey 2, row 3",
+      "state": "todo"
+    },
+    {
+      "id": "N2·4",
+      "map": "J2",
+      "title": "Sent this one before",
+      "need": "Open the link it's already in, instead of reading it twice.",
+      "where": "Journey 2, row 3",
+      "state": "todo"
+    },
+    {
+      "id": "N2·5",
+      "map": "J2",
+      "title": "Stopped reading",
+      "need": "Keep the places found so far, or drop the link. Undo.",
+      "where": "Journey 2, row 3",
+      "state": "todo"
+    },
+    {
+      "id": "N2·6",
+      "map": "J2",
+      "title": "Link removed",
+      "need": "After Remove this link: gone from Links, with Undo. Its places go too?",
+      "where": "Journey 2, row 3",
+      "state": "todo"
+    },
+    {
+      "id": "N2·7",
+      "map": "J2",
+      "title": "Board made",
+      "need": "Toast with Undo. Where Jamie lands: the new board, or back on Not in a board yet?",
+      "where": "Journey 2, row 4",
+      "state": "todo"
+    },
+    {
+      "id": "N2·8",
+      "map": "J2",
+      "title": "Not one of these",
+      "need": "Type the stall's name, or leave it out of the link.",
+      "where": "Journey 2, row 5",
+      "state": "todo"
+    },
+    {
+      "id": "N2·9",
+      "map": "J2",
+      "title": "Share a board",
+      "need": "A view-only link and the share sheet. What a friend sees without the app.",
+      "where": "Journey 2, row 5",
+      "state": "todo"
+    },
+    {
+      "id": "N2·10",
+      "map": "J2",
+      "title": "Edit a board",
+      "need": "Rename it, remove a place, delete the board. Undo for each.",
+      "where": "Journey 2, row 5",
+      "state": "todo"
+    }
+  ]
+}

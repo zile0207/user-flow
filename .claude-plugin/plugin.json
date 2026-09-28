@@ -1,0 +1,20 @@
+{
+  "name": "user-flow",
+  "version": "0.1.0",
+  "description": "Map an app's screens in Paper, from the master map to journeys to single jobs to be done. Finds the missing screens and explores them into real designs.",
+  "author": {
+    "name": "zile0207",
+    "url": "https://github.com/zile0207"
+  },
+  "repository": "https://github.com/zile0207/user-flow",
+  "keywords": ["design", "user-flow", "journey-map", "jtbd", "paper", "figma", "ux"],
+  "skills": [
+    "./skills/user-flow",
+    "./skills/init",
+    "./skills/map-master",
+    "./skills/map-journey",
+    "./skills/map-flow",
+    "./skills/audit-flow",
+    "./skills/explore-design"
+  ]
+}

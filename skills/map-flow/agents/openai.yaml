@@ -1,0 +1,3 @@
+interface:
+  display_name: "Map Flow"
+  short_description: "Map one job to be done, start to done"

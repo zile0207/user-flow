@@ -1,0 +1,17 @@
+{
+  "name": "user-flow",
+  "owner": {
+    "name": "zile0207",
+    "url": "https://github.com/zile0207"
+  },
+  "description": "user-flow as an installable Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "user-flow",
+      "source": "./",
+      "description": "Master maps, journey maps and JTBD flows in Paper, with audits that find missing screens and explorations that design them.",
+      "category": "design",
+      "keywords": ["design", "user-flow", "journey-map", "jtbd", "paper"]
+    }
+  ]
+}

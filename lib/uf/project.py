@@ -1,7 +1,7 @@
 """A project's user-flow folder: config, gap registry, paths. Created by the init skill.
 
 <app repo>/design/user-flow/
-  config.json      sources, theme, persona, maps (see references/project-layout.md)
+  config.json      sources, theme, persona, rules, maps (see references/project-and-paper.md)
   gaps.json        every needs-design gap: the single source of truth for ids, text and state
   questions.json   every open question and decision, per map: the panels render from it
   boards/          what is painted on each Paper board (written by `--commit`), for sync
@@ -58,7 +58,9 @@ class Project:
         def key(g):
             m = re.match(r'N(\d+)·(\d+)', g['id'])
             return (int(m.group(1)), int(m.group(2))) if m else (999, 0)
-        json.dump({'gaps': sorted(gaps, key=key)}, open(self._gaps_path(), 'w'), indent=2, ensure_ascii=False)
+        with open(self._gaps_path(), 'w') as f:
+            json.dump({'gaps': sorted(gaps, key=key)}, f, indent=2, ensure_ascii=False)
+            f.write('\n')
 
     def gap(self, gid):
         for g in self.gaps():
@@ -72,8 +74,13 @@ class Project:
         return f'N{map_no}·{max(ns, default=0) + 1}'
 
     def add_gap(self, map_no, title, need, where=''):
-        gid = self.next_gap_id(map_no)
+        """Adds a gap and returns its id. Safe to run twice: a gap with the same map and title is returned, not added again.
+        Run it once from the shell (`python3 specs/_uf.py add-gap …`), never inside a spec."""
         gs = self.gaps()
+        for g in gs:
+            if g.get('map') == f'J{map_no}' and g['title'].strip().lower() == title.strip().lower():
+                return g['id']
+        gid = self.next_gap_id(map_no)
         gs.append({'id': gid, 'map': f'J{map_no}', 'title': title, 'need': need, 'where': where, 'state': 'todo'})
         self.save_gaps(gs)
         return gid
@@ -102,31 +109,68 @@ class Project:
         return [q for q in qs if (map_id is None or q['map'] == map_id) and (state is None or q['state'] == state)]
 
     def _save_q(self, qs):
-        json.dump({'questions': qs}, open(self._q_path(), 'w'), indent=2, ensure_ascii=False)
+        with open(self._q_path(), 'w') as f:
+            json.dump({'questions': qs}, f, indent=2, ensure_ascii=False)
+            f.write('\n')
 
     @staticmethod
     def _qprefix(map_id):
         return f'Q{map_id[1:]}' if map_id.startswith('J') else f'Q{map_id}'
 
-    def add_question(self, map_id, text, about=''):
-        """map_id: J1, J2, F1, M. Ids are Q<journey>·<n> for journeys (Q2·3), QF1·<n> for flows, QM·<n> for the master."""
+    def add_question(self, map_id, text, about='', blocks=()):
+        """map_id: J1, J2, F1, M (master). Ids are Q<journey>·<n> for journeys (Q2·3), QF1·<n> for flows, QM·<n> for the master.
+        State maps have no panel: file their questions under the journey that owns the surface.
+        blocks: gap ids that shouldn't be designed until this is answered. Safe to run twice (same map and text)."""
         qs = self.questions()
+        for q in qs:
+            if q['map'] == map_id and q['text'].strip() == text.strip():
+                return q['id']
         pre = self._qprefix(map_id)
         ns = [int(q['id'].split('·')[1]) for q in qs if q['id'].split('·')[0] == pre]
         qid = f'{pre}·{max(ns, default=0) + 1}'
-        qs.append({'id': qid, 'map': map_id, 'text': text, 'about': about, 'state': 'open'})
+        q = {'id': qid, 'map': map_id, 'text': text, 'about': about, 'state': 'open'}
+        if blocks:
+            q['blocks'] = list(blocks)
+        qs.append(q)
         self._save_q(qs)
         return qid
 
-    def answer(self, qid, decision, date='', owner=None):
-        """Record a decision. owner: who else must confirm (e.g. 'developers'); keeps it amber until they do."""
+    def answer(self, qid, decision=None, date='', owner=None):
+        """Record a decision. owner: who else must confirm (e.g. 'the developers'); keeps it amber until they do.
+        decision=None with an owner: asked, no answer yet."""
         qs = self.questions()
+        hit = False
         for q in qs:
             if q['id'] == qid:
-                q.update(decision=decision, date=date, state='waiting' if owner else 'decided')
+                hit = True
+                q.update(date=date, state='waiting' if owner else 'decided')
+                if decision is not None:
+                    q['decision'] = decision
                 if owner:
                     q['owner'] = owner
+                else:
+                    q.pop('owner', None)
+        if not hit:
+            raise KeyError(qid + ' is not in questions.json')
         self._save_q(qs)
+
+    def blocking(self, gid):
+        """Open or waiting questions that block a gap: listed in `blocks`, or naming the gap in their text."""
+        return [q for q in self.questions() if q['state'] != 'decided'
+                and (gid in q.get('blocks', []) or re.search(rf'(?<![\w·]){re.escape(gid)}(?![\w·]|·\d)', q['text']))]
+
+    # ---------------- config
+    def save_cfg(self):
+        with open(os.path.join(self.root, 'config.json'), 'w') as f:
+            json.dump(self.cfg, f, indent=2, ensure_ascii=False)
+            f.write('\n')
+
+    def add_rule(self, kind, text):
+        """kind: copy or product. Skips a rule that is already there."""
+        rules = self.cfg.setdefault('rules', {}).setdefault(kind, [])
+        if text not in rules:
+            rules.append(text)
+            self.save_cfg()
 
     def panel(self, map_id, x, y, w):
         """panel_spec for Map.render: open and waiting questions in amber, decisions in grey."""
@@ -136,7 +180,10 @@ class Project:
             if q['state'] == 'decided':
                 items.append((q['id'], q['decision'], False))
             elif q['state'] == 'waiting':
-                items.append((q['id'], f"{q['decision']} Waiting on {q.get('owner', 'someone')}.", True))
+                if q.get('decision'):
+                    items.append((q['id'], f"{q['decision']} Waiting on {q.get('owner', 'someone')}.", True))
+                else:
+                    items.append((q['id'], f"{q['text']} Asked {q.get('owner', 'someone')}, no answer yet.", True))
             else:
                 items.append((q['id'], q['text'], True))
         n_open = sum(1 for q in qs if q['state'] != 'decided')

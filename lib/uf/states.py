@@ -22,7 +22,8 @@ class StateMap:
         self.rows = []
 
     def state(self, key, name, priority, when, until, variants, gives_way_to=(), note='', question=None):
-        """variants: up to 4 of ('card', img, ref, label) or ('gap', gid, label). question: a Q id still open about this state."""
+        """variants: up to 4 of ('card', img, ref, label) or ('gap', gid, label).
+        question: a Q id, or a list of them, still open about this state (shown in amber until decided)."""
         self.rows.append(dict(key=key, name=name, priority=priority, when=when, until=until, variants=variants,
                               gives_way_to=list(gives_way_to), note=note, question=question))
 
@@ -39,16 +40,18 @@ class StateMap:
                 + t('NEEDS DESIGN', 9, 11, 700, AMBER, 'letter-spacing:0.08em;') + t(g['need'], 11, 15, 500, MUTED, 'text-align:center;') + '</div>'
                 + t(gid, 10, 13, 700, AMBER, 'letter-spacing:0.06em;padding:0 2px;') + t(lab, 12, 15, 700, INK, 'padding:0 2px;') + '</div>')
 
-    def _row(self, r, y, W):
+    def _row(self, r, y, W, max_var):
         names = {x['key']: x['name'] for x in self.rows}
         yields = ', '.join(names.get(k, k) for k in r['gives_way_to']) or 'nothing: it stays until it ends'
-        var_w = len(r['variants']) * CARD_W + (len(r['variants']) - 1) * VAR_GAP
+        var_w = max_var * CARD_W + (max_var - 1) * VAR_GAP        # same width on every row, so the text column lines up
         q = ''
-        if r['question']:
-            qq = [x for x in self.P.questions() if x['id'] == r['question']]
-            if qq and qq[0]['state'] != 'decided':
-                q = (f'<div style="display:flex;gap:8px;background:#FFF7EA;border-radius:10px;padding:10px 12px">'
-                     + t(r['question'], 13, 18, 700, AMBER, 'white-space:nowrap;') + t(qq[0]['text'], 13, 18, 500, INK) + '</div>')
+        qids = r['question'] if isinstance(r['question'], (list, tuple)) else [r['question']] if r['question'] else []
+        byid = {x['id']: x for x in self.P.questions()}
+        for qid in qids:
+            qq = byid.get(qid)
+            if qq and qq['state'] != 'decided':
+                q += (f'<div style="display:flex;gap:8px;background:#FFF7EA;border-radius:10px;padding:10px 12px">'
+                      + t(qid, 13, 18, 700, AMBER, 'white-space:nowrap;') + t(qq['text'], 13, 18, 500, INK) + '</div>')
         facts = ''.join('<div style="display:flex;gap:12px">' + t(k, 12, 18, 700, MUTED, 'width:120px;flex-shrink:0;letter-spacing:0.06em;') + t(v, 15, 21, 500, INK) + '</div>'
                         for k, v in (('SHOWS WHEN', r['when']), ('UNTIL', r['until']), ('GIVES WAY TO', yields)) + ((('NOTE', r['note']),) if r['note'] else ()))
         return (f'<div layer-name="State · {r["name"]}" style="position:absolute;left:{LEFT}px;top:{y}px;width:{W-2*LEFT}px;height:{CARD_H+40}px;background:#FFFFFF;border:1px solid {LINE};border-radius:20px;padding:20px 24px;display:flex;gap:28px;align-items:flex-start;box-sizing:border-box">'
@@ -69,7 +72,7 @@ class StateMap:
         B.add('story', f'<div layer-name="Story line" style="position:absolute;left:40px;top:116px;width:{min(W-80, 2600)}px;display:flex;flex-direction:column;gap:10px">'
               + t(story, 17, 24, 500, MUTED) + t(f'Rule: {self.rule}', 17, 24, 700, INK) + '</div>')
         for r in rows:
-            B.add('state' + r['key'].replace('_', ''), self._row(r, y, W))
+            B.add('state' + r['key'].replace('_', ''), self._row(r, y, W, max_var))
             y += CARD_H + 40 + ROW_GAP
         print(f'{len(rows)} states · {sum(1 for r in rows for v in r["variants"] if v[0] == "gap")} variants to design')
         return B.emit(W, y + 40)

@@ -27,7 +27,7 @@ Also agree on the flow's number (the next free `no` in `maps.flows`), plus:
 - Walk the persona's path through the source screens and existing journey specs: the shortest real path from start to done.
 - At each step, ask: can the job fail or stall here? If yes, add a decision. Its exits are the branch that recovers, or a jump into the journey that covers it ("→ 2 · Collecting, row 3").
 - Reuse journey screens: same img, same ref. Don't redraw a journey's detail here. Link to it with exit or jump pills.
-- Run `references/coverage-checklist.md` on this path only. Missing steps become gaps in the registry under the journey that owns the area.
+- Run `references/coverage-checklist.md` on this path only. Missing steps become gaps in the registry under the journey that owns the area: `_uf.py add-gap <journey no> "<title>" "<need>" "<where>"`, once, from the shell. Questions go in as `_uf.py add-question F<no> "<text>"`.
 
 ## 3. Spec, render, paste
 - Write `specs/f<no>.py` with `Map(<no>, P)` and `m.render(P, 'f<no>', …, P.panel('F<no>', x, y, w))`.
@@ -35,7 +35,7 @@ Also agree on the flow's number (the next free `no` in `maps.flows`), plus:
   - Row 1: start pill → screens, decisions, background work → the "Job done" exit pill.
   - Row 2 and down: recovery branches only.
   - Keep it tight. A flow that needs more than 3 rows is a journey. Say so and offer **map-journey**.
-- Render, then create the artboard `F<no> · <short job> · flow` to the right of the journeys. Paint it (`references/sync.md`), screenshot, review and commit.
+- Render and fix any warning. Create the artboard `F<no> · <short job> · flow` to the right of the journeys, paint it and commit (`references/sync.md` → First paint), then screenshot and review each row.
 - Record it in `config.json` → `maps.flows` with the job sentence.
 
 ## 4. Report

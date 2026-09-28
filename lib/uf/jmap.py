@@ -128,6 +128,30 @@ class Map:
         lonely = [k for k, n in out.items() if n < 2]
         assert not lonely, f'decisions need 2+ exits: {lonely}'
 
+    def warnings(self, rows):
+        """Things a person would spot on the board. Printed, not fatal: fix them in the spec."""
+        out = []
+        labelled = {n for n, *_ in rows}
+        used = set()
+        for d in self.N.values():
+            mid = d['y'] + (ATTACH if d['kind'] in ('card', 'gap') else d['h'] / 2)
+            used.add(max(1, round((mid - row_y(1)) / ROW_PITCH) + 1))
+        for n in sorted(used - labelled):
+            out.append(f'row {n} has nodes but no row label')
+        boxes = []
+        for ed in self.E:
+            if ed['l']:
+                (x, y), w, hh = self._label_box(ed)
+                boxes.append((ed['l'], x - w / 2, y - hh / 2, w, hh))
+        for i, (la, ax, ay, aw, ah) in enumerate(boxes):
+            for lb, bx, by, bw, bh in boxes[i + 1:]:
+                if ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah:
+                    out.append(f'labels overlap: "{la}" and "{lb}"')
+            for k, d in self.N.items():         # 2px of slack: a label touching a box edge is fine
+                if ax + 2 < d['x'] + d['w'] and d['x'] < ax + aw - 2 and ay + 2 < d['y'] + d['h'] and d['y'] < ay + ah - 2:
+                    out.append(f'label "{la}" sits on node {k}')
+        return out
+
     # ---------------- render
     def node_html(self, i, d):
         k = d['kind']
@@ -159,7 +183,7 @@ class Map:
                 tag = f'{g} · NEEDS DESIGN'; bot = f'{g} · TO DESIGN'; tagc, bd, bg = AMBER, '#B4BDBF', '#FBFBFA'
             return (f'<div layer-name="To design · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:{bg};border:1.5px dashed {bd};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
                     f'<div style="width:180px;height:390px;flex-shrink:0;border-radius:10px;background:#F1F3F3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;padding:20px;box-sizing:border-box">'
-                    f'<div style="{base.F}font-size:10px;line-height:12px;font-weight:700;letter-spacing:0.08em;color:{tagc};background:#FFFFFF;border-radius:999px;padding:5px 9px">{tag}</div>'
+                    f'<div style="{base.F}font-size:10px;line-height:12px;font-weight:700;letter-spacing:0.08em;color:{tagc};background:#FFFFFF;border-radius:999px;padding:5px 9px;white-space:nowrap">{tag}</div>'
                     + t(d['need'], 13, 18, 500, MUTED, 'text-align:center;') + '</div>'
                     f'<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">'
                     + t(bot, 11, 14, 700, tagc, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK) + '</div></div>')
@@ -197,8 +221,30 @@ class Map:
             pts[-1] = move(pts[-1], pts[-2], min(b, math.hypot(pts[-1][0]-pts[-2][0], pts[-1][1]-pts[-2][1]) / 2))
         return pts
 
+    def _at(self, p):
+        """The node whose box holds point p (arrows start and end on a box edge), or None."""
+        for k, d in self.N.items():
+            if d['x'] - 2 <= p[0] <= d['x'] + d['w'] + 2 and d['y'] - 2 <= p[1] <= d['y'] + d['h'] + 2:
+                return k
+        return None
+
+    def _edge_key(self, ed):
+        a, b = self._at(ed['p'][0]), self._at(ed['p'][-1])
+        if a and b:
+            return f'e_{a}_{b}'
+        return 'e' + board.h(repr([(round(x), round(y)) for x, y in ed['p']]))[:8]   # joins a line, not a node
+
+    def _label_box(self, ed):
+        lab = ed['l']; lp = ed['lp']
+        if not lp:
+            (ax, ay), (bx, by) = ed['p'][0], ed['p'][1]; lp = ((ax + bx) / 2, (ay + by) / 2)
+        lw = ed['lw'] or max(36, round(len(lab) * 6.6 + 16))
+        lines = max(1, math.ceil((len(lab) * 6.6) / (lw - 12)))
+        lh = lines * 15 + 6
+        return lp, lw, lh
+
     def edge_html(self, ed):
-        """Returns (key, arrow svg, label html or None). The key is a hash of the route, so it survives reordering."""
+        """Returns (key, arrow svg, label html or None). The key names the nodes it joins, so it survives moves."""
         pts = ed['p']; col = base.ACCENT if ed['c'] == 'coral' else GREY; sw = 2.5 if ed['c'] == 'coral' else 2
         xs = [p[0] for p in pts]; ys = [p[1] for p in pts]; pad = 10
         x0, y0 = min(xs) - pad, min(ys) - pad
@@ -215,27 +261,42 @@ class Map:
         halo = self._trim(line, 12, 12)
         dstr = lambda P: 'M' + ' L'.join(f'{x:.1f} {y:.1f}' for x, y in P)
         dash = ' stroke-dasharray="6 5"' if ed['d'] else ''
-        key = 'e' + board.h(repr([(round(x), round(y)) for x, y in pts]))[:8]
+        key = self._edge_key(ed)
         svg = (f'<svg layer-name="Arrow" width="{w:.0f}" height="{hh:.0f}" viewBox="0 0 {w:.0f} {hh:.0f}" style="position:absolute;left:{x0:.0f}px;top:{y0:.0f}px">'
                f'<path d="{dstr(halo)}" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="butt" stroke-linejoin="round"/>'
                f'<path d="{dstr(line)}" fill="none" stroke="{col}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"{dash}/>{head}</svg>')
         lab_html = None
         if ed['l']:
-            lab = ed['l']; lp = ed['lp']
-            if not lp:
-                (ax, ay), (bx, by) = pts[0], pts[1]; lp = ((ax + bx) / 2, (ay + by) / 2)
-            lw = ed['lw'] or max(36, round(len(lab) * 6.6 + 16))
-            lines = max(1, math.ceil((len(lab) * 6.6) / (lw - 12)))
-            lh = lines * 15 + 6
+            lab = ed['l']; lp, lw, lh = self._label_box(ed)
             lc = base.ACCENT if ed['c'] == 'coral' else MUTED
             lab_html = (f'<div layer-name="Label · {lab}" style="position:absolute;left:{lp[0]-lw/2:.0f}px;top:{lp[1]-lh/2:.0f}px;width:{lw}px;background:#FFFFFF;border-radius:6px;padding:3px 4px;box-sizing:border-box;display:flex;justify-content:center">'
                         + t(lab, 12, 15, 600, lc, 'text-align:center;') + '</div>')
         return key, svg, lab_html
 
+    def _mark_path(self, P):
+        """Record in the registry which gaps the persona's path (a coral arrow) touches. The status "next up" uses it."""
+        on = set()
+        for ed in self.E:
+            if ed['c'] == 'coral':
+                on.update(k for k in (self._at(ed['p'][0]), self._at(ed['p'][-1])) if k)
+        for k, d in self.N.items():
+            if d['kind'] == 'gap' and d['gid']:
+                want = k in on
+                try:
+                    have = P.gap(d['gid']).get('on_path', False)
+                except KeyError:
+                    continue
+                if have != want:
+                    P.set_gap(d['gid'], on_path=want)
+
     def render(self, P, name, W, title, right, story, rows, panel_spec=None, dividers=(), kind='journey'):
         """Paint one map as keyed elements (see board.py). rows: [(row_no, title, sub, persona_path?)].
         panel_spec: (x, y, w, title, sub, items) or P.panel('J2', x, y, w). Returns the sync plan."""
         self.check()
+        for w in self.warnings(rows):
+            print('  warning:', w)
+        if kind == 'journey':
+            self._mark_path(P)
         designed, todo, later, dias = self.counts()
         stats = [(str(designed), 'designed screens', INK), (str(todo), 'to design', AMBER)]
         if later: stats.append((str(later), 'after MVP', '#6B7678'))
@@ -285,7 +346,8 @@ def header(width, title, right, story, stats, rows, journey_no=None, dividers=()
     items = [item(ln(base.ACCENT, sw=2.5), f"{persona}'s path"), item(ln(GREY), 'Another way through'), item(ln(GREY, True), 'Remembered for later'),
              item(dg('#FFFFFF'), 'The user decides'), item(dg(INK), f'{app} or the phone decides'),
              item('<div style="width:14px;height:20px;border-radius:3px;border:1.5px solid #C9D0D2;background:#FFFFFF"></div>', f'Designed screen (id from {screens_name})'),
-             item('<div style="width:14px;height:20px;border-radius:3px;border:1.5px dashed #B4BDBF;background:#F1F3F3"></div>', f'Needs design (N{j}·3 = journey {j}, gap 3)'),
+             item('<div style="width:14px;height:20px;border-radius:3px;border:1.5px dashed #B4BDBF;background:#F1F3F3"></div>',
+                  f'Needs design (N{j}·3 = journey {j}, gap 3)' if kind == 'journey' else 'Needs design (N2·3 = gap 3 of journey 2)'),
              item(f'<div style="width:14px;height:20px;border-radius:3px;border:1px solid #C9D0D2;background:#FFFFFF;position:relative"><div style="position:absolute;left:2px;top:2px;width:8px;height:4px;border-radius:2px;background:{base.ACCENT}"></div></div>', 'Explored and chosen'),
              item('<div style="width:14px;height:20px;border-radius:3px;border:1.5px dashed #D3D8DA;background:#FFFFFF"></div>', 'After MVP'),
              item(f'<div style="width:30px;height:16px;border-radius:5px;border:1.5px solid {GREY};background:#EEF1F2"></div>', f'{app} works in the background'),

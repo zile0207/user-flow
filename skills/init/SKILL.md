@@ -12,7 +12,8 @@ Creates `design/user-flow/` in the current repo, so every other user-flow skill 
 
 ## 1. Ask (one message, skip anything the prompt already answered)
 - **Where the designs live:** a Paper file link, a Figma file link, and/or "the codebase only". For Paper and Figma, which page has the finished screens.
-- **Where boards go:** a page for maps (offer "User Journey"), and a page for explorations (offer "Exploration"). Both are in the same file as the confirmed screens. Mark any older exploration file as legacy, so no skill writes to it.
+- **Where boards go:** a page for maps (offer "User Journey"), and a page for explorations (offer "Exploration"). Both are in the same file as the confirmed screens. If they don't exist yet, offer to create them (`create_page`).
+- **Other pages and files:** any other page with finished screens (it goes in `more_screens_pages`, with what it's for), and any older file to mark as legacy (`legacy_file_ids`), so no skill writes to it.
 - **The rules:** the app's copy rules (vocabulary, banned words, what never to guess) and product rules (what may be asked, when). Read them from AGENTS.md, CLAUDE.md, a spec or a story page if they exist. Draft them, and confirm with the user.
 - **The persona:** a name and a line about them. Offer to draft it from a story or spec page if one exists.
 - **The router,** if there's a codebase: Expo Router, Next.js app router, React Navigation, or other. Detect it first, then confirm.
@@ -29,15 +30,16 @@ Don't export any images yet. The map skills export what they draw.
 - Write `design/user-flow/ui_kit.py` starting from `templates/project/ui_kit.py`. Copy the real values: font, ink and muted colours, the brand colour, radii, the button shapes, list rows, the status bar, and any signature block (like Argo's red top).
   - Every part is a small function that returns HTML. Explorations build screens only from these parts.
 - Set `theme.accent` to the brand colour and `theme.font` to the font family in `config.json`.
+- Check it imports: `cd design/user-flow/specs && python3 -c "import _uf, ui_kit"`.
 
 ## 4. Write the project folder
 Copy `templates/project/` into `design/user-flow/`, then fill in:
-- `config.json`: sources (`screens_page`, `maps_page`, `explore_page`, plus their names), persona, theme, `rules` (copy, product, files), `plugin_version` (from `.claude-plugin/plugin.json`), `device_label`, and empty `maps`.
+- `config.json`: sources (`screens_page`, `maps_page`, `explore_page`, each with its `_name`; `more_screens_pages`; `legacy_file_ids`), persona, theme, `screen_ids` (how the screens page names screens, and the fallback from `references/project-and-paper.md` → Screen ids), `rules` (copy, product, files), `plugin_version` (from `.claude-plugin/plugin.json`), `device_label`, and empty `maps`.
 - `config.local.json`: `{"plugin_root": "<resolved plugin root>"}`. It's gitignored, one per machine.
-- `gaps.json`: `{"gaps": []}`. `questions.json`: `{"questions": []}`. An empty `boards/` folder.
-- `.gitignore`: `img/`, `refs/`, `out/`, `config.local.json`.
+- `gaps.json`: `{"gaps": []}`. `questions.json`: `{"questions": []}`. `boards/.gitkeep`, so git keeps the empty folder.
+- `.gitignore`: copy `templates/project/gitignore` to `design/user-flow/.gitignore` (it ignores `img/`, `refs/`, `out/`, `config.local.json`).
 
-Then run `python3 design/user-flow/specs/_uf.py` to check the bootstrap finds the plugin. It should print nothing and exit 0.
+Then run `python3 design/user-flow/specs/_uf.py` to check the bootstrap finds the plugin (it prints nothing and exits 0), and `python3 design/user-flow/specs/_uf.py status` for the first status block.
 
 ## 5. Finish
 - If the repo has rules about new folders or files (AGENTS.md, CLAUDE.md, CONTRIBUTING), check them and add a line that allows `design/user-flow/`.

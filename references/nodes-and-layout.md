@@ -13,7 +13,7 @@ Every map is rendered by `lib/uf` from a spec in the project's `design/user-flow
 
 Rules across levels:
 - A screen keeps one ID everywhere. It's the ID from the source (the Paper page's chapter·step, a route, or a Figma frame).
-- A gap has one ID everywhere: `N<journey>·<n>` from `gaps.json`. A gap found in a flow or on the master map belongs to the journey that covers its area. If no journey covers that area yet, use `N0·<n>` until one does.
+- A gap has one ID everywhere: `N<journey>·<n>` from `gaps.json`. A gap found in a flow or on the master map belongs to the journey that covers its area. A flow's legend explains ids as "N2·3 = gap 3 of journey 2". If no journey covers that area yet, use `N0·<n>` until one does.
 - The master map shows every gap from `gaps.json` in its area. Journeys and flows show the gaps on their paths.
 
 ## Nodes (journey and flow maps)
@@ -30,11 +30,11 @@ Rules across levels:
 | `pill(..., 'entry')` | A grey dashed pill | Comes from another step or map | "From 8 · Skip" |
 | `pill(..., 'jump')` | A light pill, ↩ | Loops back to a far node | Instead of an arrow across the map |
 
-**Master map items:** `('card', img, ref, title)` and `('gap', gid)`, grouped in `area(name, sub, items, entries)`.
+**Master map items:** `('card', img, ref, title)` and `('gap', gid)`, grouped in `area(name, sub, items, entries)`. Areas are laid out in rows in the order you add them (`MasterMap(P, columns=5)`), so add them in the order a person meets them. Questions filed under map `M` (QM·n) render in a panel at the bottom.
 
 **State map rows:** `state(key, name, priority, when, until, variants, gives_way_to, note, question)`.
 - `variants` are up to 4 of `('card', img, ref, label)` or `('gap', gid, label)`: the sizes or forms the state takes, e.g. widget, half, page.
-- `question` links an open Q id, which then shows on the row in amber.
+- `question` links an open Q id, or a list of them, which then show on the row in amber. State maps have no panel: file their questions under the journey that owns the surface (`add-question J3 …`).
 - The board states the winning rule once, for example "Highest priority that applies wins. Ties: newest first."
 
 ## Spec skeleton (journey or flow)
@@ -54,7 +54,8 @@ Every render writes keyed elements, a full-paint set and a sync plan (see `sync.
 - `m.h(a, b)`: same row, left to right. `m.v(a, b)`: straight down, or up with `up=True`. `m.e([points])`: any route. Right angles only.
 - **Colour:** `'coral'` is the persona's path (it renders in the project's accent colour). Everything else is grey.
 - **Dashed** means remembered for later, or after MVP.
-- **Labels** say what caused the step ("Taps Paste", "Yes", "About a minute"). Every exit of a decision is labelled. Set `lw` so long labels wrap.
+- **Labels** say what caused the step ("Taps Paste", "Yes", "About a minute"). Every exit of a decision is labelled, and so is any arrow whose cause isn't obvious from the two nodes. An arrow from a screen into the decision that follows it needs no label. Set `lw` so long labels wrap.
+- **Keys:** an arrow's key names the two nodes it joins (`e_d1_g3`), so moving nodes moves arrows instead of redrawing them. Keep node ids short and stable.
 - `na=True`: no arrowhead. Use it for a stem into a bus, or a line merging into another line.
 - **Crossings:** arrows carry a white halo, so a crossing reads as a hop. Keep them rare.
 
@@ -72,8 +73,8 @@ Every render writes keyed elements, a full-paint set and a sync plan (see `sync.
 - **Flow maps:**
   - Row 1 runs from a start pill, which states the job ("When I have a free evening, I want…"), to an exit pill, "Job done: …".
   - Add rows only for branches that change whether the job gets done.
-- **Checks** run on every render and fail on overlaps, decisions with fewer than 2 exits, gaps without IDs, and duplicate IDs.
-- **The decisions panel** goes in the empty bottom-right: `P.panel('J2', x, y, w)`. It renders from `questions.json`. Add questions with `P.add_question('J2', text)`, and answer them with the answer-questions skill.
+- **Checks** run on every render and fail on overlaps, decisions with fewer than 2 exits, gaps without IDs, and duplicate IDs. **Warnings** print for labels that overlap each other or sit on a node, and for a row that has nodes but no row label. Fix both.
+- **The decisions panel** goes in the empty bottom-right: `P.panel('J2', x, y, w)`. It renders from `questions.json`. Add questions from the shell (`_uf.py add-question J2 "…"`), never in the spec, and answer them with the answer-questions skill.
 
 ## States of a gap
 `todo` (NEEDS DESIGN) → `exploring` (EXPLORING, ROUND n) → `explored` (the chosen screen, EXPLORED · X), or `later` (AFTER MVP) at any point. State lives in `gaps.json`. Change it there and re-render the maps that show the gap.

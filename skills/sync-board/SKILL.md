@@ -14,15 +14,18 @@ The only way boards change on the canvas. Other skills edit specs and registries
 1. **Which boards:** the one named in the prompt, or every board a change touched.
    - A gap change touches every map that shows the gap, plus the master map.
    - A question change touches its map.
-   - `config.json` → `maps` lists every board with its spec and artboard.
-2. **Render:** `python3 specs/<spec>.py`. Read the plan line.
-   - **`paint in full`:** no committed state yet. Follow "First paint". If the artboard exists but is unkeyed (painted before sync), delete its children first. Tell the user that's happening.
-   - **`N insert · N replace · N delete`:** follow "Sync".
-   - **`0 · 0 · 0`:** nothing to do. Say so.
-3. **Drift first, always:** get_children, save the JSON to `out/<board>/children.json`, then run `--drift`. If it reports unkeyed or missing elements, show them. Ask whether to keep the hand edits (fold them into the spec, then re-render) or overwrite them. Don't silently overwrite someone's work.
-4. **Run the ops** from `out/<board>/sync/plan.json`: deletes in one call, then replaces, then inserts. Resize the artboard if `size_changed`.
-5. **Check:** screenshot the areas that changed, then the whole board.
-6. **Commit:** `python3 specs/<spec>.py --commit <artboard id>`. If this is a new board, record it in `config.json`.
+   - `config.json` → `maps` lists every board with its spec and artboard. `_uf.py status` lists the ones out of date.
+2. **Render:** `python3 specs/<spec>.py`. Read the warnings and the plan line.
+   - **Warnings** (labels overlapping, a row with no label): fix them in the spec first, then render again.
+   - **`paint in full`:** no committed state yet. Follow "First paint" in `sync.md`. If the artboard exists but is unkeyed (painted before sync), delete its children first and tell the user.
+   - **`N insert · N replace · N move · N rename · N delete`:** follow "Sync".
+   - **All zero:** nothing to paint. Still check for hand edits (step 3) unless the board was painted in this session, and say what you found. No commit needed.
+3. **Drift, before any change:** `get_tree_summary(<artboard>, depth 1)` → `out/<board>/tree.txt` → `python3 specs/<spec>.py --drift out/<board>/tree.txt`. Never use `get_children` for this (it stops at 100).
+   - Unkeyed or missing elements are hand edits. Show them and ask: **keep** (fold into the spec, re-render, drift again) or **discard** (delete the unkeyed node ids it printed, with the plan's deletes). Don't silently overwrite someone's work.
+   - Drift can't see text or style changed inside an element. If people other than agents edit this board, ask.
+4. **Run the ops** from `out/<board>/sync/plan.json`, in the order `sync.md` gives: delete, rename, replace, then one `update_styles` for moves and replaced positions, then insert, then the artboard size.
+5. **Check:** screenshot the areas that changed, then the whole board. Re-render: the plan must now be all zero after the commit.
+6. **Commit:** `python3 specs/<spec>.py --commit <artboard id>`. If this is a new board, record it in `config.json`. If the renderer version changed, set `config.json` → `plugin_version` to the new one once every board is synced.
 
 ## Report
-One line per board: "j2 · 1 replaced (panel) · 0 hand edits · committed". If the renderer version changed since the last commit, say so. A version bump can change unchanged boards.
+One line per board: "j2 · 7 replaced, 30 moved, 2 inserted · 1 hand edit discarded · committed". If the renderer version changed since the last commit, say so: a version bump can change boards whose spec didn't.

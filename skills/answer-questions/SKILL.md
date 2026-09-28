@@ -11,7 +11,7 @@ Maps raise questions: "code or password?", "keep the places found so far?". This
 **Project:** `design/user-flow/`. If it's missing, run **init**.
 
 ## 1. Show what's open
-- If the prompt has no answers yet, list `P.questions(state='open')` and `P.questions(state='waiting')`, grouped by map, numbered by id:
+- If the prompt has no answers yet, run `python3 design/user-flow/specs/_uf.py questions --state open` and `--state waiting`, and show them grouped by map, numbered by id:
 ```
 Journey 1 · Getting in
   Q1·3  Email sign-in: password, or a code sent to the email?
@@ -30,12 +30,14 @@ For every answer, check each of these:
   - a label changes
 - **Other questions:** one answer can settle another. Say so.
 - **Rules:** a product or copy rule to add to `config.json` → `rules`, for example "Sharing is after MVP".
-- **Someone else must confirm it:** record the answer with `owner`, for example `P.answer('Q1·1', text, date, owner='the developers')`. It stays amber until they do.
+- **Someone else must confirm it:** record the answer with an owner: `_uf.py answer Q1·1 "<text>" --owner "the developers"`. If they haven't answered at all yet, leave out the text: `_uf.py answer Q2·2 --owner "the developers"` shows "Asked the developers, no answer yet". It stays amber until they do.
+- **Conflicts:** check each answer against the project's own docs (AGENTS.md, CLAUDE.md, README, specs) and `config.json` → `rules`. If an answer contradicts one (for example "sharing is after MVP" when a doc says v1 has a view-only link), say so and ask which wins before applying anything.
 
 Show the list of changes and ask "apply?", unless the user said to go ahead.
 
 ## 3. Apply
-- Record each answer with `P.answer(qid, decision, date[, owner])`. Write the decision as one plain sentence, for example "Continue works with nothing picked. Plans stay generic, like Skip."
+- Record each answer: `_uf.py answer <qid> "<decision>" --date "<date>"` (add `--owner` as above). Write the decision as one plain sentence, for example "Continue works with nothing picked. Plans stay generic, like Skip."
+- New rules: `_uf.py add-rule product "<rule>"` (or `copy`). Gap changes: `_uf.py set-gap <id> need="<new need>"`, `state=later`.
 - Edit the specs, gaps and rules as listed. Keep the layout rules: when a card becomes a pill, keep its column so the arrows still line up.
 - Re-render every touched map. Run **sync-board** on each.
 

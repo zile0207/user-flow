@@ -14,9 +14,12 @@ TOP = 300
 
 
 class MasterMap:
-    def __init__(self, project, columns=5):
+    def __init__(self, project, columns=5, layout='rows'):
+        """layout 'rows': areas left to right, then the next row, so the reading order is the order you add them.
+        'masonry': each area drops into the shortest column (tighter, but the order is lost)."""
         self.P = project
         self.columns = columns
+        self.layout = layout
         self.areas = []
 
     def area(self, name, sub, items, entries=''):
@@ -60,13 +63,24 @@ class MasterMap:
 
     def render(self, title, right, story, name='master'):
         W = 40 * 2 + self.columns * AREA_W + (self.columns - 1) * COL_GAP
-        heights = [TOP] * self.columns
         placed = []
-        for a in self.areas:                       # masonry: each area goes into the shortest column
-            c = heights.index(min(heights))
-            placed.append((a, 40 + c * (AREA_W + COL_GAP), heights[c]))
-            heights[c] += self._area_h(a) + COL_GAP
-        H = max(heights) + 40
+        if self.layout == 'masonry':
+            heights = [TOP] * self.columns
+            for a in self.areas:                   # each area goes into the shortest column
+                c = heights.index(min(heights))
+                placed.append((a, 40 + c * (AREA_W + COL_GAP), heights[c]))
+                heights[c] += self._area_h(a) + COL_GAP
+            bottom = max(heights)
+        else:
+            y = TOP
+            for r in range(0, len(self.areas), self.columns):
+                row = self.areas[r:r + self.columns]
+                for c, a in enumerate(row):
+                    placed.append((a, 40 + c * (AREA_W + COL_GAP), y))
+                y += max(self._area_h(a) for a in row) + COL_GAP
+            bottom = y
+        qs = self.P.questions('M')
+        H = bottom + (120 + 60 * ((len(qs) + 1) // 2) + 40 if qs else 0) + 40
         designed = sum(1 for a in self.areas for it in a['items'] if it[0] == 'card')
         gids = [it[1] for a in self.areas for it in a['items'] if it[0] == 'gap']
         states = [self.P.gap(g).get('state', 'todo') for g in gids]
@@ -84,6 +98,9 @@ class MasterMap:
               + ''.join('<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end">' + t(n, 32, 36, 700, c, 'letter-spacing:-0.02em;') + t(l, 12, 16, 500, MUTED, 'white-space:nowrap;') + '</div>' for n, l, c in stats) + '</div>')
         for a, x, y in placed:
             B.add('area' + ''.join(ch for ch in a['name'].title() if ch.isalnum()), self._area_html(a, x, y))
+        if qs:                                     # questions the audit raised about the whole app (QM·n)
+            from .jmap import panel
+            B.add('panel', panel(*self.P.panel('M', 40, bottom, min(W - 80, 2400))))
         print(f'{designed} designed · {todo} to design · {later} after MVP · {len(self.areas)} areas')
         return B.emit(W, H)
 

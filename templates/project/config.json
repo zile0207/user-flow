@@ -1,6 +1,6 @@
 {
   "project": "<App name>",
-  "plugin_version": "0.2.0",
+  "plugin_version": "0.3.0",
   "device_label": "Mobile · iPhone",
   "theme": {
     "accent": "<brand colour, e.g. #E05254>",
@@ -15,8 +15,12 @@
       "file_id": "<paper file id>",
       "screens_page": "<page id>",
       "screens_page_name": "<page name>",
+      "more_screens_pages": [],
       "maps_page": "<page id>",
-      "explore_page": "<page id>"
+      "maps_page_name": "<page name, e.g. User Journey>",
+      "explore_page": "<page id>",
+      "explore_page_name": "<page name, e.g. Exploration>",
+      "legacy_file_ids": []
     },
     "figma": null,
     "codebase": {
@@ -30,6 +34,7 @@
     "summary": "<one line: who they are and what they want>",
     "story_artboard": null
   },
+  "screen_ids": "<how the screens page names screens (e.g. chapter·step, E7·5), and the fallback used>",
   "rules": {
     "copy": [
       "<vocabulary, banned words, what never to guess>"
@@ -45,6 +50,7 @@
     "journeys": [],
     "flows": [],
     "states": [],
-    "explorations": []
+    "explorations": [],
+    "promoted": []
   }
 }

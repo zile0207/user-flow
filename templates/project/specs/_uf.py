@@ -1,4 +1,5 @@
-"""Bootstrap for specs: finds the user-flow plugin and loads this project. Every spec starts with `from _uf import P`."""
+"""Bootstrap for specs: finds the user-flow plugin and loads this project. Every spec starts with `from _uf import P`.
+Run it directly for the project command line: `python3 design/user-flow/specs/_uf.py status` (see uf/cli.py)."""
 import glob, json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,3 +22,7 @@ sys.path.insert(0, ROOT)          # the project's ui_kit.py
 from uf.project import load  # noqa: E402
 
 P = load(ROOT)
+
+if __name__ == '__main__':
+    from uf.cli import main
+    main(P, sys.argv[1:])

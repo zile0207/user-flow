@@ -12,19 +12,20 @@ The master map is the inventory. It shows every screen from every source, groupe
 
 ## 1. Collect every screen
 Merge all the sources in `config.json`:
-- **Paper or Figma screens page:** every screen frame, with its id (chapter·step or frame name) and node id.
-- **Codebase routes:** every route. Match each one to its design screen by name and purpose. A route with no design becomes a card with `ref` = the route and a code screenshot if available. If there's no image, make it a gap titled "<route> · needs a design", with the need "Built in code, no design yet".
+- **Paper or Figma screens page**, plus any `more_screens_pages` in config: every screen frame, with its id and node id. Ids follow `references/project-and-paper.md` → Screen ids. When you need the fallback (no step numbers, restarting rows, old names), write the rule you used into `config.json` → `screen_ids`.
+- For a big page, list the screens with a script-like pass: get_basic_info for the artboards, then get_tree_summary per chapter. Save the list to `out/screens.json` as you go, so it survives a long run.
+- **Codebase routes:** every route. Match each one to its design screen by name and purpose. A route with no design becomes a card with `ref` = the route and a code screenshot if available. If there's no image, make it a gap titled after the screen (for example "Constraints"), with the need "Built in code at <route>, no design yet".
 - **Gaps:** everything in `gaps.json`.
 
-Drop exact duplicates: the same screen shown twice in a story counts once. Keep states that differ (empty, error, loading) as separate screens.
+Drop duplicates by the rule in `references/project-and-paper.md` → Duplicates: the same screen shown twice in a story counts once. Keep states that differ (empty, error, loading) as separate screens.
 
 ## 2. Group into areas
 - An area is a tab, a section or a route group (e.g. Onboarding, Explore, Links, Boards, Plans, Profile, The top, Shell).
-- Order the areas the way a person meets them.
+- Order the areas the way a person meets them. The layout keeps the order you add them in (left to right, then the next row).
 - Each area gets a subtitle (source chapters or routes) and its entry points in words.
 
 ## 3. Spec, render, paste
-- Export each screen once: `img/<node id>.png`, 1x.
+- Export each screen once at 1x into `img/<node id without -0>.png`, in batches of at most 12 (`references/project-and-paper.md` → Exporting screens).
 - Write `specs/master.py`:
 ```python
 from _uf import P
@@ -36,10 +37,10 @@ M.area('Onboarding', 'A1 · app/(auth), app/(onboarding)', [('card', '1CH7', 'A1
 if __name__ == '__main__':
     M.render('<Project> · every screen', '<n> areas · <date>', '<one sentence: what this map is>')   # board 'master'
 ```
-- Render, then paint per `references/sync.md`. The artboard is named `Master map`, placed first on the maps page. Commit it and record it in `config.json` → `maps.master`. Later changes go through **sync-board**.
+- Render, then paint per `references/sync.md` → First paint (commit straight after pasting). The artboard is named `Master map`, placed first on the maps page. Record it in `config.json` → `maps.master` as `{"spec": "specs/master.py", "artboard": "<id>"}`. Later changes go through **sync-board**.
 
 ## 4. Audit
-Run **audit-flow** on the master map at inventory level: areas with no empty, error or loading states, routes without designs, designs without routes. New gaps join the registry under the journey for that area, or `N0·n` if no journey covers it yet.
+Run **audit-flow** on the master map at inventory level: areas with no empty, error or loading states, routes without designs, designs without routes. New gaps join the registry under the journey for that area, or `N0·n` if no journey covers it yet. Questions about the whole app go in as `_uf.py add-question M "<text>"` and render in the master map's panel.
 
 ## 5. Report
 - The counts: designed, to design, after MVP, areas.

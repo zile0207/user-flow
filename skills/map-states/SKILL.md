@@ -18,11 +18,11 @@ Some UI shows one thing at a time and several things compete for it. A journey c
   - **until:** what ends it
   - **variants:** sizes or forms, each designed (a card) or not (a gap)
   - **gives way to:** which states can take over
-- A state that appears in the rules but was never designed becomes a gap (`P.add_gap`) under the journey that owns it.
+- A state that appears in the rules but was never designed becomes a gap under the journey that owns it: `_uf.py add-gap <journey no> "<title>" "<need>"`, once, from the shell.
 
 ## 2. Priority and the rule
 - Put the states in priority order. Then write the rule in one sentence, for example "Highest priority that applies wins. Ties: newest first. The persona can swipe a state away once."
-- Where the sources disagree (two chapters show different winners for the same moment), don't pick one. Add a question with `P.add_question('<map>', text)` and link it to the state with `question=`. It shows in amber on the row. Suggest running **answer-questions**.
+- Where the sources disagree (two chapters show different winners for the same moment), don't pick one. Reuse the question if it's already in `_uf.py questions`; otherwise add it under the journey that owns the surface (state maps have no panel of their own): `_uf.py add-question J<n> "<text>"`. Link it to the state with `question=` (one id, or a list). It shows in amber on the row. Suggest running **answer-questions**.
 
 ## 3. Spec, render, paint
 - Write `specs/states_<slug>.py`:
@@ -36,7 +36,7 @@ S.state('link_failed', 'A link failed', 1, 'Argo could not read a link', 'Try ag
 if __name__ == '__main__':
     S.render('The top · every state', '<n> states · <date>', '<one sentence>', 'states_top')
 ```
-- Export any screen images you need. Render, then create the artboard `States · <element>` on the maps page, after the flows. Paint it (see `sync.md`), screenshot and review, commit, then record it in `config.json` → `maps.states`.
+- Export any screen images you need (batches of at most 12). Render, then create the artboard `States · <element>` on the maps page, after the flows. Paint and commit it (`sync.md` → First paint), screenshot and review, then record it in `config.json` → `maps.states` as `{"element": "<element>", "spec": "specs/states_<slug>.py", "artboard": "<id>"}`.
 
 ## 4. Report
 - The rule.

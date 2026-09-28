@@ -9,8 +9,12 @@ description: Design a needs-design gap (N2·3 style id) on its own exploration b
 **Project:** `design/user-flow/`. If it's missing, run **init**. It also needs `ui_kit.py`: if it's missing or thin, extend it from the nearest confirmed screen first.
 
 ## 0. Which gap, and which step
-- **No id in the prompt:** list the gaps that are todo or exploring from `gaps.json`, grouped by map, with the persona's-path ones first, e.g. "N1·2 Email sign-in (Journey 1, row 2)". Ask which one. Don't guess.
+- **An id in the prompt** (`N2·3`): use it.
+- **A title instead** ("design the email sign-in"): match it against the titles in `_uf.py gaps`. One clear match: say which ("That's N1·2 Email sign-in") and go on. Several: ask, listing only those.
+- **"Confirm X", "iterate on X", "more variants" without an id:** if exactly one board is open (a gap in state `exploring`), it's that one. Otherwise ask which exploration.
+- **Nothing to go on:** run `_uf.py gaps --state todo` and `--state exploring`, show the list grouped by map (the persona's-path gaps come first), and ask which one. Don't guess.
 - **The id already has a board** (`config.json` → `maps.explorations`): the prompt is a reply to a round. Go to step 5.
+- **Blocking questions:** run `_uf.py blocking <id>`. If an open question blocks this gap (Q1·3 "code or password?" blocks N1·2), ask it first, with your recommendation. Carry on only when it's answered (record it with **answer-questions**), or when the user says to explore both answers, one direction each.
 - Otherwise, start at step 1.
 
 ## 1. Understand the gap
@@ -33,8 +37,8 @@ description: Design a needs-design gap (N2·3 style id) on its own exploration b
 ## 4. Build the board
 - Write `specs/explore_<id>.py`, following the example, and render it.
 - Run the **design review** (`references/design-review.md`) and fix what fails before anyone sees it.
-- Create the artboard `Explore · <id> · <title>` on the **explore page** (`sources.paper.explore_page`), right of the other explorations, at the printed size. Paint it in full (`references/sync.md`), screenshot, review, then `--commit`.
-- Update the registry: `P.set_gap(id, state='exploring', round=1, board='<artboard>')`. Add the board to `config.json` → `maps.explorations`. Re-render and **sync-board** the maps that show the gap, so their cards read "EXPLORING, ROUND 1".
+- Create the artboard `Explore · <id> · <title>` on the **explore page** (`sources.paper.explore_page`), right of the other explorations, at the printed size. Paint it in full (`references/sync.md` → First paint: commit straight after pasting), then screenshot and review.
+- Update the registry: `_uf.py set-gap <id> state=exploring round=1 board=<artboard>`. Add the board to `config.json` → `maps.explorations`. Re-render and **sync-board** the maps that show the gap, so their cards read "EXPLORING, ROUND 1".
 - Tell the user their options: **confirm X**, **iterate on X: <what to change>**, **more variants**, or **mix** ("A's size with B's places"). Give your pick and one reason.
 
 ## 5. Replies
@@ -44,7 +48,7 @@ Follow `references/explore-board.md` → "The three replies" exactly:
   - Run the design review on the chosen direction.
   - Set the spec's `status` to confirmed, re-render, then **sync-board** the board (header, chosen heading and bar are replaced; the outline is inserted).
   - Export `X·1` to `img/<id>_X.png`.
-  - Run `P.set_gap(id, state='explored', chosen='X', round=n, img=...)`.
+  - Run `_uf.py set-gap <id> state=explored chosen=X round=<n> img=<id with - for ·>_X`.
   - Re-render and **sync-board** every map that shows the gap. The card and the counts follow the registry.
 - If the chosen design adds new states the maps didn't have, run **audit-flow** on that journey.
 - Then offer **promote-design**, which puts the confirmed screens on the screens page for developers.

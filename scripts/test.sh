@@ -24,11 +24,12 @@ if mode == '--update' or not os.path.exists(exp_path):
 exp = json.load(open(exp_path))
 if exp == got:
     print(f'{spec}: ok ({len(got["elements"])} elements)'); sys.exit(0)
-e = dict(exp['elements']); g = dict(got['elements'])
+e = {x[0]: x[1:] for x in exp['elements']}; g = {x[0]: x[1:] for x in got['elements']}
 changed = [k for k in g if k in e and e[k] != g[k]]
 print(f'{spec}: CHANGED · size {exp["size"]} → {got["size"]} · changed {changed[:8]} · new {[k for k in g if k not in e][:8]} · gone {[k for k in e if k not in g][:8]}')
 sys.exit(1)
 PY
 done
 rm -rf "$TMP"
+python3 "$REPO/tests/test_lib.py" || fail=1
 exit $fail

@@ -57,6 +57,15 @@ init ──> map-master ──> map-journey ──> map-flow        map-states
 every change ──> sync-board (only what changed; stops on hand edits)
 ```
 
+Boards are synced, not repainted: every element carries a key in its layer name, so a change only deletes, renames, replaces, moves or inserts what differs, after checking the board for hand edits.
+
+The project has a small command line for its registries and status, so every agent reads and writes them the same way:
+```
+python3 design/user-flow/specs/_uf.py status
+python3 design/user-flow/specs/_uf.py gaps --state todo
+python3 design/user-flow/specs/_uf.py answer Q1·3 "A 6-digit code, no password."
+```
+
 A project keeps its own files in `design/user-flow/`:
 - `config.json`: sources, theme, persona, maps
 - `gaps.json` and `questions.json`: the gap and question registries
@@ -71,9 +80,9 @@ Images and rendered output are gitignored and can be re-created. See [references
 ```
 .claude-plugin/   plugin and marketplace manifests
 skills/           one folder per skill: SKILL.md, plus agents/openai.yaml for Codex
-lib/uf/           renderers: jmap.py (journeys, flows), master.py, states.py, explore.py, promote.py; board.py (keys and sync); project.py (config, registries)
+lib/uf/           renderers: jmap.py (journeys, flows), master.py, states.py, explore.py, promote.py; board.py (keys and sync); project.py (config, registries); cli.py (the project command line)
 references/       rules the skills follow: nodes and layout, explore board, design review, coverage checklist, sync, project and Paper
 templates/        project starter files, plus worked examples from Argo
-scripts/          link-skills.sh, test.sh (regression test against tests/fixture)
+scripts/          link-skills.sh, test.sh (element hashes of tests/fixture, plus tests/test_lib.py)
 tests/            a fixture project and the expected element hashes
 ```

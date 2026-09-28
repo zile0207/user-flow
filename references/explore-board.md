@@ -49,7 +49,7 @@ if __name__ == '__main__':
 3. **Confirm X:**
    1. Set `status` to confirmed and re-render, then **sync** the board (`sync.md`). Sync replaces only the header, the chosen direction's heading and the bar, and inserts the outline.
    2. Export `X·1` as a PNG and save it as `img/<id with - for ·>_X.png` (e.g. `N2-1_A.png`).
-   3. Run `P.set_gap(id, state='explored', chosen='X', round=n, img='N2-1_X', board='<artboard>')`.
+   3. Run `_uf.py set-gap <id> state=explored chosen=X round=<n> img=N2-1_X board=<artboard>` (or `P.set_gap(...)` in Python).
    4. Re-render and **sync** every map that shows the gap. The registry change swaps the card and the counts.
    5. Offer **promote-design**, which moves the confirmed screens onto the screens page so developers build from one place.
 

@@ -26,8 +26,9 @@ if __name__ == '__main__':
     C.render('Screens confirmed in explorations for Journey 2 · Collecting.', 'Mon 28 Sep 2026')
 ```
 - The render gives each screen a stable id (X2·1, X2·2, …). It stores the ids in `gaps.json` (`screen_ids`, `chapter`) and sets the gap to `promoted`. Ids are never reused or renumbered. Add new gaps at the end.
-- **First time:** create the artboard on the **screens page** (`sources.paper.screens_page`), below the last chapter, at the printed size. Paint it in full.
-  - This is the only time the plugin writes to the screens page. Say so and ask before doing it.
+- **First time:** create the artboard on the **screens page** (`sources.paper.screens_page`), below the last chapter, at the printed size. If `more_screens_pages` has a page meant for confirmed designs (for example "Confirmed Screens From Exploration"), ask which of the two it goes on. Paint it in full and commit (`sync.md` → First paint).
+  - This is the only time the plugin writes to a screens page. Say so and ask before doing it.
+  - Record the chapter in `config.json` → `maps.promoted`: `{"journey": <n>, "spec": "specs/promoted_j<n>.py", "artboard": "<id>", "page": "<page id>"}`.
 - **Later:** **sync-board** the chapter.
 
 ## 3. Update the maps

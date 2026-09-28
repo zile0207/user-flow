@@ -6,23 +6,38 @@
  "elements": [
   [
    "header",
-   "abc7e6199588"
+   "499d686ff7cf",
+   "bc808be6d81e",
+   40,
+   40
   ],
   [
    "story",
-   "d331054eeda4"
+   "107da8cad00b",
+   "8f9758e09a61",
+   40,
+   116
   ],
   [
    "coverage",
-   "f4cfc4843f60"
+   "17c8337bb9a4",
+   "ddc7cfb73945",
+   1364,
+   160
   ],
   [
    "areaStart",
-   "8f498fc79533"
+   "d15b7504aad9",
+   "ed3e0c2c3f22",
+   40,
+   300
   ],
   [
    "areaHome",
-   "2ef4803b1efa"
+   "d73e722853a5",
+   "49169f0039c4",
+   1056,
+   300
   ]
  ]
 }

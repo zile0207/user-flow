@@ -24,6 +24,8 @@ Go through the checklist line by line against the map:
   - no gap duplicates another gap (search the registry by title and need)
   - `explored` gaps have their img
   - the counts on the board match the spec
+  - the board has no hand edits (run `--drift`, see `references/sync.md`)
+  - needs and notes follow `config.json` → `rules`
 
 ## 3. Show findings before changing anything
 One list, grouped by checklist line:
@@ -37,7 +39,8 @@ Ask which to keep. Default is all.
 - Add each kept gap: `P.add_gap(map_no, title, need, where)`. The id is assigned and never reused.
 - Add it to the map spec with `m.gap(id, x, y, **P.g(gid))`, plus its arrows. Keep the layout rules: branch straight down, lane routing, spacing.
 - Fix consistency issues in the spec.
-- Re-render. Re-paste the map, or add just the new nodes if the layout didn't move. Screenshot and review.
+- Questions the audit can't settle (they need a product decision) go in with `P.add_question(map_id, text)`, not as gaps.
+- Re-render, then **sync-board**. Screenshot and review.
 - If the master map exists, add the new gaps to their areas.
 
 ## 5. Report

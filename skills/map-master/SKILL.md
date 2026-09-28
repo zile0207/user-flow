@@ -7,7 +7,7 @@ description: Plot every screen in the app on one master map, grouped by area, wi
 
 The master map is the inventory. It shows every screen from every source, grouped by area, with every needs-design gap in its area. It has no arrows: journeys and flows carry those.
 
-**Plugin root:** this skill's real directory, two levels up. Read `references/nodes-and-layout.md` (Three levels, Master map items) and `references/project-and-paper.md`.
+**Plugin root:** this skill's real directory, two levels up. Read `references/nodes-and-layout.md` (Levels, Master map items) and `references/project-and-paper.md`.
 **Project:** `design/user-flow/`. If it's missing, run **init**.
 
 ## 1. Collect every screen
@@ -34,9 +34,9 @@ M.area('Onboarding', 'A1 · app/(auth), app/(onboarding)', [('card', '1CH7', 'A1
        entries='first launch, sign out')
 ...
 if __name__ == '__main__':
-    M.render('<Project> · every screen', '<n> areas · <date>', '<one sentence: what this map is>')
+    M.render('<Project> · every screen', '<n> areas · <date>', '<one sentence: what this map is>')   # board 'master'
 ```
-- Render, then paste per `references/project-and-paper.md`. The artboard is named `Master map`, placed first on the maps page. Record it in `config.json` → `maps.master`.
+- Render, then paint per `references/sync.md`. The artboard is named `Master map`, placed first on the maps page. Commit it and record it in `config.json` → `maps.master`. Later changes go through **sync-board**.
 
 ## 4. Audit
 Run **audit-flow** on the master map at inventory level: areas with no empty, error or loading states, routes without designs, designs without routes. New gaps join the registry under the journey for that area, or `N0·n` if no journey covers it yet.

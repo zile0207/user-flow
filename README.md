@@ -35,23 +35,32 @@ Needs the Paper MCP. Figma sources need the Figma MCP. Reference search uses the
 | [`map-journey`](skills/map-journey/SKILL.md) | you or the agent | One area end to end, every branch and gap. |
 | [`map-flow`](skills/map-flow/SKILL.md) | you or the agent | One job to be done, start to done. |
 | [`audit-flow`](skills/audit-flow/SKILL.md) | you or the agent | Finds missing screens in a map and adds them as gaps. |
+| [`map-states`](skills/map-states/SKILL.md) | you or the agent | Every state one surface can show, in priority order, and the rule that picks one. |
 | [`explore-design`](skills/explore-design/SKILL.md) | you or the agent | Designs a gap: references, 3 directions, rounds, confirm. |
+| [`promote-design`](skills/promote-design/SKILL.md) | you or the agent | Moves a confirmed design onto the screens page with stable screen ids. |
+| [`answer-questions`](skills/answer-questions/SKILL.md) | you or the agent | Takes answers to open questions and applies what each one changes. |
+| [`sync-board`](skills/sync-board/SKILL.md) | you or the agent | Updates a board on the canvas to match its spec: only what changed, after checking for hand edits. |
 
 In Claude Code the skills are namespaced: `/user-flow:user-flow`, `/user-flow:init`, and so on.
 
 ## How it fits together
 
 ```
-init ──> map-master ──> map-journey ──> map-flow
-              │              │              │
-              └──── audit-flow (finds gaps: N<journey>·<n>) ────┘
+init ──> map-master ──> map-journey ──> map-flow        map-states
+              │              │              │                │
+              └──── audit-flow (gaps N<journey>·<n>, questions Q<journey>·<n>) ───┘
+                             │                        │
+                     explore-design ──> confirm   answer-questions
                              │
-                     explore-design ──> confirm ──> the gap card becomes the real screen on every map
+                      promote-design ──> screens page (X2·1) ──> developers
+
+every change ──> sync-board (only what changed; stops on hand edits)
 ```
 
 A project keeps its own files in `design/user-flow/`:
 - `config.json`: sources, theme, persona, maps
-- `gaps.json`: the gap registry
+- `gaps.json` and `questions.json`: the gap and question registries
+- `boards/`: what is painted on each board, for sync
 - `ui_kit.py`: the app's screen parts
 - `specs/`: one file per board
 
@@ -62,8 +71,9 @@ Images and rendered output are gitignored and can be re-created. See [references
 ```
 .claude-plugin/   plugin and marketplace manifests
 skills/           one folder per skill: SKILL.md, plus agents/openai.yaml for Codex
-lib/uf/           renderers: jmap.py (journey and flow maps), master.py, explore.py, project.py, base.py
-references/       rules the skills follow: nodes and layout, explore board, coverage checklist, project and Paper
+lib/uf/           renderers: jmap.py (journeys, flows), master.py, states.py, explore.py, promote.py; board.py (keys and sync); project.py (config, registries)
+references/       rules the skills follow: nodes and layout, explore board, design review, coverage checklist, sync, project and Paper
 templates/        project starter files, plus worked examples from Argo
-scripts/          link-skills.sh
+scripts/          link-skills.sh, test.sh (regression test against tests/fixture)
+tests/            a fixture project and the expected element hashes
 ```

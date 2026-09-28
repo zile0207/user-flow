@@ -1,0 +1,99 @@
+{
+  "questions": [
+    {
+      "id": "Q1·1",
+      "map": "J1",
+      "text": "Which interest list does 8 use? Onboarding shows 14 broad words, the Profile page uses finer groups.",
+      "about": "",
+      "state": "waiting",
+      "decision": "The 14 onboarding words for now. The Profile page will match them.",
+      "date": "Mon 28 Sep 2026",
+      "owner": "the developers"
+    },
+    {
+      "id": "Q1·2",
+      "map": "J1",
+      "text": "Can Continue on 8 go with nothing picked?",
+      "about": "",
+      "state": "decided",
+      "decision": "Continue works with nothing picked. Plans stay generic, like Skip.",
+      "date": "Mon 28 Sep 2026"
+    },
+    {
+      "id": "Q1·3",
+      "map": "J1",
+      "text": "Email sign-in: password, or a code sent to the email? Pick one before N1·2 is designed.",
+      "about": "",
+      "state": "open"
+    },
+    {
+      "id": "Q1·4",
+      "map": "J1",
+      "text": "Is there a quiz? A7·1 offers Take the quiz, but nothing is designed behind it.",
+      "about": "",
+      "state": "decided",
+      "decision": "The quiz comes after MVP. For MVP, A7·1 shows only Save these.",
+      "date": "Mon 28 Sep 2026"
+    },
+    {
+      "id": "Q1·5",
+      "map": "J1",
+      "text": "A returning account on a new phone: skip onboarding, or still ask for location and alerts?",
+      "about": "",
+      "state": "decided",
+      "decision": "A returning account on a new phone skips onboarding but is asked for location and alerts.",
+      "date": "Mon 28 Sep 2026"
+    },
+    {
+      "id": "Q1·6",
+      "map": "J1",
+      "text": "If the app closes mid-onboarding, which steps pick up where they were?",
+      "about": "",
+      "state": "decided",
+      "decision": "Closed mid-onboarding: it starts again from 1.",
+      "date": "Mon 28 Sep 2026"
+    },
+    {
+      "id": "Q2·1",
+      "map": "J2",
+      "text": "Does a link that is reading take over the top? Chapter D says no, J3 shows yes. Rows 2 and 3 use J3 as a what-if.",
+      "about": "",
+      "state": "open"
+    },
+    {
+      "id": "Q2·2",
+      "map": "J2",
+      "text": "Paste: iOS asks \"Allow Paste\" every time unless Argo uses the system Paste button. Check with the developers.",
+      "about": "",
+      "state": "open"
+    },
+    {
+      "id": "Q2·3",
+      "map": "J2",
+      "text": "After Make board on a second board: land on the new board, or back where Jamie was?",
+      "about": "",
+      "state": "open"
+    },
+    {
+      "id": "Q2·4",
+      "map": "J2",
+      "text": "Stop reading: keep the places found so far, or drop them all?",
+      "about": "",
+      "state": "open"
+    },
+    {
+      "id": "Q2·5",
+      "map": "J2",
+      "text": "Remove this link: do its places leave their boards too?",
+      "about": "",
+      "state": "open"
+    },
+    {
+      "id": "Q2·6",
+      "map": "J2",
+      "text": "Is sharing a board (a view-only link) in the MVP?",
+      "about": "",
+      "state": "open"
+    }
+  ]
+}

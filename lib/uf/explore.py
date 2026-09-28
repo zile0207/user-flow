@@ -6,8 +6,8 @@ The layout is fixed, so every board looks the same:
   or, once confirmed, a confirmed bar.
 """
 import math
-from . import base
-from .base import t, dump, ico, INK, MUTED, LINE, AMBER, GREY
+from . import base, board
+from .base import t, ico, INK, MUTED, LINE, AMBER, GREY
 
 PAD = 40
 LEFT_W = 840
@@ -154,15 +154,33 @@ def round_blocks(spec, W):
     return out
 
 
-def render(spec, folder):
+def _key(html):
+    name = html[html.index('layer-name="') + 12:]
+    name = name[:name.index('"')]
+    if name.startswith('Round '):
+        return 'round' + name.split(' ')[1]
+    if name == 'Chosen outline':
+        return 'outline'
+    if name in ('Confirmed', 'Your pick'):
+        return 'bar'                                   # the confirm swap replaces this element
+    if name.startswith('Direction '):
+        parts = name.split(' · ')
+        return 'dir' + parts[0].split(' ')[1] + (parts[1] if len(parts) > 1 else '')
+    raise ValueError(name)
+
+
+def render(P, name, spec):
+    """Paint an exploration board as keyed elements (see board.py). Returns the sync plan."""
     W, H = size(spec)
-    chunks = [header(spec, W) + brief(spec), refs(spec)] + round_blocks(spec, W)
-    dump(chunks, folder)
-    print('artboard', W, 'x', H)
-    return W, H
+    B = board.Board(P, name)
+    B.add('header', header(spec, W))
+    B.add('brief', brief(spec))
+    B.add('refs', refs(spec))
+    for html in round_blocks(spec, W):
+        B.add(_key(html), html)
+    return B.emit(W, H, page='explore')
 
 
-# ---------------- journey card after confirm
 def explored_card(spec, x, y, img_path):
     """Replaces the dashed card on the journey map. Same size and position, so arrows still line up."""
     st = spec['status']

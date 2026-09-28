@@ -5,7 +5,7 @@ description: Design a needs-design gap (N2·3 style id) on its own exploration b
 
 # explore-design
 
-**Plugin root:** this skill's real directory, two levels up. Read `references/explore-board.md` (all of it) and `references/project-and-paper.md`. Reference spec: `templates/examples/explore_n2_1.py`.
+**Plugin root:** this skill's real directory, two levels up. Read `references/explore-board.md` (all of it), `references/design-review.md`, `references/sync.md` and `references/project-and-paper.md`. Follow `config.json` → `rules` in every line of copy. Reference spec: `templates/examples/explore_n2_1.py`.
 **Project:** `design/user-flow/`. If it's missing, run **init**. It also needs `ui_kit.py`: if it's missing or thin, extend it from the nearest confirmed screen first.
 
 ## 0. Which gap, and which step
@@ -32,16 +32,19 @@ description: Design a needs-design gap (N2·3 style id) on its own exploration b
 
 ## 4. Build the board
 - Write `specs/explore_<id>.py`, following the example, and render it.
-- Create the artboard `Explore · <id> · <title>` on the maps page, right of the other boards, at the printed size. Paste, screenshot and review.
-- Update the registry: `P.set_gap(id, state='exploring', round=1, board='<artboard>')`. Add the board to `config.json` → `maps.explorations`. Set the gap card's tag on the maps to "EXPLORING, ROUND 1" (re-render, or edit the tag text).
+- Run the **design review** (`references/design-review.md`) and fix what fails before anyone sees it.
+- Create the artboard `Explore · <id> · <title>` on the **explore page** (`sources.paper.explore_page`), right of the other explorations, at the printed size. Paint it in full (`references/sync.md`), screenshot, review, then `--commit`.
+- Update the registry: `P.set_gap(id, state='exploring', round=1, board='<artboard>')`. Add the board to `config.json` → `maps.explorations`. Re-render and **sync-board** the maps that show the gap, so their cards read "EXPLORING, ROUND 1".
 - Tell the user their options: **confirm X**, **iterate on X: <what to change>**, **more variants**, or **mix** ("A's size with B's places"). Give your pick and one reason.
 
 ## 5. Replies
 Follow `references/explore-board.md` → "The three replies" exactly:
-- **Iterate / mix / more variants:** a new round below, with the next letters, `from` set, and the ask recorded. Set `round` in the registry.
+- **Iterate / mix / more variants:** a new round below, with the next letters, `from` set, and the ask recorded. Review it, re-render, then **sync-board** the board (only the new round and the bar change). Set `round` in the registry.
 - **Confirm X:**
-  - Update the board (outline, CHOSEN, CONFIRMED bar, header).
+  - Run the design review on the chosen direction.
+  - Set the spec's `status` to confirmed, re-render, then **sync-board** the board (header, chosen heading and bar are replaced; the outline is inserted).
   - Export `X·1` to `img/<id>_X.png`.
   - Run `P.set_gap(id, state='explored', chosen='X', round=n, img=...)`.
-  - Swap the gap card on every map that shows it, then update the counts.
+  - Re-render and **sync-board** every map that shows the gap. The card and the counts follow the registry.
 - If the chosen design adds new states the maps didn't have, run **audit-flow** on that journey.
+- Then offer **promote-design**, which puts the confirmed screens on the screens page for developers.

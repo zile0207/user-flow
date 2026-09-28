@@ -1,0 +1,37 @@
+{
+  "project": "Fixture",
+  "plugin_version": "0.2.0",
+  "theme": {
+    "accent": "#E05254",
+    "font": "Switzer",
+    "device": [
+      390,
+      844
+    ]
+  },
+  "sources": {
+    "paper": {
+      "file_id": "TEST",
+      "screens_page": "p-1",
+      "screens_page_name": "Screens",
+      "maps_page": "p-2",
+      "explore_page": "p-3"
+    }
+  },
+  "persona": {
+    "name": "Sam",
+    "summary": "A test persona."
+  },
+  "maps": {
+    "master": null,
+    "journeys": [],
+    "flows": [],
+    "explorations": [
+      {
+        "gap": "N1\u00b74",
+        "spec": "specs/explore.py",
+        "artboard": "TEST"
+      }
+    ]
+  }
+}

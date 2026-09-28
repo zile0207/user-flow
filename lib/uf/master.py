@@ -2,8 +2,8 @@
 Arrows live in journey and flow maps; the master map answers "what exists, and what is missing".
 Rules: references/nodes-and-layout.md · Master map."""
 import math
-from . import base
-from .base import t, dump, INK, MUTED, LINE, AMBER
+from . import base, board
+from .base import t, INK, MUTED, LINE, AMBER
 
 CARD_W, CARD_H, THUMB_W, THUMB_H = 140, 352, 124, 268
 GAP = 16
@@ -31,10 +31,10 @@ class MasterMap:
 
     def _gap(self, gid):
         g = self.P.gap(gid); st = g.get('state', 'todo')
-        if st == 'explored':
+        if st in ('explored', 'promoted'):
             return (f'<div layer-name="{gid} · {g["title"]} · explored" style="width:{CARD_W}px;height:{CARD_H}px;background:#FFFFFF;border:1px solid {LINE};border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box">'
                     f'<img src="paper-asset://{self.P.img_dir}/{g["img"]}.png" style="width:{THUMB_W}px;height:{THUMB_H}px;border-radius:8px;border:1px solid {LINE};object-fit:cover;flex-shrink:0" />'
-                    + t(f'{gid} · EXPLORED', 10, 13, 700, base.ACCENT, 'letter-spacing:0.06em;padding:0 2px;') + t(g['title'], 12, 15, 700, INK, 'padding:0 2px;') + '</div>')
+                    + t((g.get('screen_ids') or [None])[0] or f'{gid} · EXPLORED', 10, 13, 700, base.ACCENT if st == 'explored' else MUTED, 'letter-spacing:0.06em;padding:0 2px;') + t(g['title'], 12, 15, 700, INK, 'padding:0 2px;') + '</div>')
         col, bd = (('#6B7678', '#D3D8DA') if st == 'later' else (AMBER, '#B4BDBF'))
         tag = {'later': 'AFTER MVP', 'exploring': 'EXPLORING'}.get(st, 'NEEDS DESIGN')
         return (f'<div layer-name="To design · {g["title"]}" style="width:{CARD_W}px;height:{CARD_H}px;background:#FBFBFA;border:1.5px dashed {bd};border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box">'
@@ -58,7 +58,7 @@ class MasterMap:
                 + (t('Entry points: ' + a['entries'], 12, 16, 500, MUTED) if a['entries'] else '')
                 + f'<div style="display:flex;flex-wrap:wrap;gap:{GAP}px">{cells}</div></div>')
 
-    def render(self, title, right, story):
+    def render(self, title, right, story, name='master'):
         W = 40 * 2 + self.columns * AREA_W + (self.columns - 1) * COL_GAP
         heights = [TOP] * self.columns
         placed = []
@@ -70,17 +70,20 @@ class MasterMap:
         designed = sum(1 for a in self.areas for it in a['items'] if it[0] == 'card')
         gids = [it[1] for a in self.areas for it in a['items'] if it[0] == 'gap']
         states = [self.P.gap(g).get('state', 'todo') for g in gids]
-        designed += states.count('explored')
+        designed += states.count('explored') + states.count('promoted')
         todo = states.count('todo') + states.count('exploring')
         later = states.count('later')
         bar = (f'<div layer-name="Header bar" style="position:absolute;left:40px;top:40px;width:{W-80}px;height:56px;background:{INK};border-radius:14px;display:flex;align-items:center;padding:0 20px;gap:16px;box-sizing:border-box">'
                + t('Master map', 13, 18, 500, '#9AA4A6') + '<div style="width:1px;height:20px;background:#3A4245"></div>' + t(title, 17, 22, 700, '#FFFFFF')
                + '<div style="flex:1"></div>' + t(right, 13, 18, 500, '#9AA4A6') + f'<div style="width:10px;height:10px;border-radius:5px;background:{base.ACCENT}"></div></div>')
         stats = [(str(designed), 'designed screens', INK), (str(todo), 'to design', AMBER)] + ([(str(later), 'after MVP', '#6B7678')] if later else []) + [(str(len(self.areas)), 'areas', INK)]
-        top = (bar + f'<div layer-name="Story line" style="position:absolute;left:40px;top:116px;width:2600px">' + t(story, 17, 24, 500, MUTED) + '</div>'
-               + f'<div layer-name="Coverage" style="position:absolute;left:{W-700}px;top:160px;width:660px;display:flex;justify-content:flex-end;gap:36px">'
-               + ''.join('<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end">' + t(n, 32, 36, 700, c, 'letter-spacing:-0.02em;') + t(l, 12, 16, 500, MUTED, 'white-space:nowrap;') + '</div>' for n, l, c in stats) + '</div>')
-        chunks = [top] + [self._area_html(a, x, y) for a, x, y in placed]
-        dump(chunks, self.P.out('master'))
-        print(f'artboard {W} x {H} · {designed} designed · {todo} to design · {later} after MVP · {len(self.areas)} areas')
-        return W, H
+        B = board.Board(self.P, name)
+        B.add('header', bar)
+        B.add('story', f'<div layer-name="Story line" style="position:absolute;left:40px;top:116px;width:2600px">' + t(story, 17, 24, 500, MUTED) + '</div>')
+        B.add('coverage', f'<div layer-name="Coverage" style="position:absolute;left:{W-700}px;top:160px;width:660px;display:flex;justify-content:flex-end;gap:36px">'
+              + ''.join('<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end">' + t(n, 32, 36, 700, c, 'letter-spacing:-0.02em;') + t(l, 12, 16, 500, MUTED, 'white-space:nowrap;') + '</div>' for n, l, c in stats) + '</div>')
+        for a, x, y in placed:
+            B.add('area' + ''.join(ch for ch in a['name'].title() if ch.isalnum()), self._area_html(a, x, y))
+        print(f'{designed} designed · {todo} to design · {later} after MVP · {len(self.areas)} areas')
+        return B.emit(W, H)
+

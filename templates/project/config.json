@@ -1,11 +1,50 @@
 {
   "project": "<App name>",
-  "theme": {"accent": "<brand colour, e.g. #E05254>", "font": "<font family>", "device": [390, 844]},
-  "sources": {
-    "paper": {"file_id": "<paper file id>", "screens_page": "<page id>", "maps_page": "<page id>"},
-    "figma": null,
-    "codebase": {"router": "<expo-router | next-app | react-navigation>", "routes": "<app>", "components": "<src/components>"}
+  "plugin_version": "0.2.0",
+  "device_label": "Mobile · iPhone",
+  "theme": {
+    "accent": "<brand colour, e.g. #E05254>",
+    "font": "<font family>",
+    "device": [
+      390,
+      844
+    ]
   },
-  "persona": {"name": "<Name>", "summary": "<one line: who they are and what they want>", "story_artboard": null},
-  "maps": {"master": null, "journeys": [], "flows": [], "explorations": []}
+  "sources": {
+    "paper": {
+      "file_id": "<paper file id>",
+      "screens_page": "<page id>",
+      "screens_page_name": "<page name>",
+      "maps_page": "<page id>",
+      "explore_page": "<page id>"
+    },
+    "figma": null,
+    "codebase": {
+      "router": "<expo-router | next-app | react-navigation>",
+      "routes": "<app>",
+      "components": "<src/components>"
+    }
+  },
+  "persona": {
+    "name": "<Name>",
+    "summary": "<one line: who they are and what they want>",
+    "story_artboard": null
+  },
+  "rules": {
+    "copy": [
+      "<vocabulary, banned words, what never to guess>"
+    ],
+    "product": [
+      "<what may be asked, when, in what order>"
+    ],
+    "files": "<which page holds maps, explorations and confirmed screens; anything off limits>"
+  },
+  "promote_prefix": "X",
+  "maps": {
+    "master": null,
+    "journeys": [],
+    "flows": [],
+    "states": [],
+    "explorations": []
+  }
 }

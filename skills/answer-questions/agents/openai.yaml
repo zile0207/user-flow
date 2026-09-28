@@ -1,0 +1,3 @@
+interface:
+  display_name: "Answer Questions"
+  short_description: "Turn answers to open questions into map changes"

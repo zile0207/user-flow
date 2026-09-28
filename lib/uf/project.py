@@ -3,6 +3,8 @@
 <app repo>/design/user-flow/
   config.json      sources, theme, persona, maps (see references/project-layout.md)
   gaps.json        every needs-design gap: the single source of truth for ids, text and state
+  questions.json   every open question and decision, per map: the panels render from it
+  boards/          what is painted on each Paper board (written by `--commit`), for sync
   ui_kit.py        the app's own screen parts, copied from its confirmed screens (for explorations)
   specs/           one file per map or exploration: master.py, j1.py, f1.py, explore_n2_1.py …
   img/  refs/      exported screen PNGs and reference images (gitignored, re-exportable)
@@ -87,7 +89,59 @@ class Project:
         """kwargs for Map.gap(...) straight from the registry, so maps never copy gap text by hand."""
         g = self.gap(gid)
         return dict(title=g['title'], need=g['need'], gid=gid, state=g.get('state', 'todo'),
-                    chosen=g.get('chosen'), round=g.get('round'), img=g.get('img'))
+                    chosen=g.get('chosen'), round=g.get('round'), img=g.get('img'), screen_ids=g.get('screen_ids'))
+
+
+    # ---------------- questions and decisions
+    def _q_path(self):
+        return os.path.join(self.root, 'questions.json')
+
+    def questions(self, map_id=None, state=None):
+        p = self._q_path()
+        qs = json.load(open(p))['questions'] if os.path.exists(p) else []
+        return [q for q in qs if (map_id is None or q['map'] == map_id) and (state is None or q['state'] == state)]
+
+    def _save_q(self, qs):
+        json.dump({'questions': qs}, open(self._q_path(), 'w'), indent=2, ensure_ascii=False)
+
+    @staticmethod
+    def _qprefix(map_id):
+        return f'Q{map_id[1:]}' if map_id.startswith('J') else f'Q{map_id}'
+
+    def add_question(self, map_id, text, about=''):
+        """map_id: J1, J2, F1, M. Ids are Q<journey>·<n> for journeys (Q2·3), QF1·<n> for flows, QM·<n> for the master."""
+        qs = self.questions()
+        pre = self._qprefix(map_id)
+        ns = [int(q['id'].split('·')[1]) for q in qs if q['id'].split('·')[0] == pre]
+        qid = f'{pre}·{max(ns, default=0) + 1}'
+        qs.append({'id': qid, 'map': map_id, 'text': text, 'about': about, 'state': 'open'})
+        self._save_q(qs)
+        return qid
+
+    def answer(self, qid, decision, date='', owner=None):
+        """Record a decision. owner: who else must confirm (e.g. 'developers'); keeps it amber until they do."""
+        qs = self.questions()
+        for q in qs:
+            if q['id'] == qid:
+                q.update(decision=decision, date=date, state='waiting' if owner else 'decided')
+                if owner:
+                    q['owner'] = owner
+        self._save_q(qs)
+
+    def panel(self, map_id, x, y, w):
+        """panel_spec for Map.render: open and waiting questions in amber, decisions in grey."""
+        qs = self.questions(map_id)
+        items = []
+        for q in qs:
+            if q['state'] == 'decided':
+                items.append((q['id'], q['decision'], False))
+            elif q['state'] == 'waiting':
+                items.append((q['id'], f"{q['decision']} Waiting on {q.get('owner', 'someone')}.", True))
+            else:
+                items.append((q['id'], q['text'], True))
+        n_open = sum(1 for q in qs if q['state'] != 'decided')
+        title = 'DECISIONS AND OPEN QUESTIONS' if n_open < len(qs) else 'OPEN QUESTIONS'
+        return (x, y, w, title, f'{n_open} still open · answer them with answer-questions', items)
 
 
 def load(start=None):

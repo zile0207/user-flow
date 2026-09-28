@@ -1,0 +1,4 @@
+{"questions": [
+  {"id": "Q1·1", "map": "J1", "text": "Email: code or password?", "about": "", "state": "open"},
+  {"id": "Q1·2", "map": "J1", "text": "Restart or resume?", "about": "", "state": "decided", "decision": "Restart from step 1.", "date": "Mon 1 Jan"}
+]}

@@ -12,6 +12,7 @@
   - the naming: `{action}-{slug}` (`map-flow`, `audit-flow`, `explore-design`). `init` and `user-flow` are the exceptions.
 - **Skills find shared files** by resolving their own real directory and going two levels up to the plugin root. Don't use `../other-skill/` paths.
 - **`lib/uf` is the only place that draws.** A layout change goes into the renderer and `references/nodes-and-layout.md` together.
-  - Before committing a renderer change, re-render `templates/examples/` against a project and diff the output. Unchanged boards must stay byte-identical.
+  - Before committing, run `scripts/test.sh`. It renders `tests/fixture` and compares every element hash. An intended visual change: review it, run `scripts/test.sh --update`, and bump the version (boards painted with the old version will show replaces on their next sync).
+  - Keep `board.VERSION` and `.claude-plugin/plugin.json` → `version` equal.
 - **Version:** bump `.claude-plugin/plugin.json` → `version` on every release. Claude Code uses it to show updates.
 - **Validate** with `claude plugin validate . --strict` after touching a manifest.

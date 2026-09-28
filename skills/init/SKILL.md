@@ -12,7 +12,8 @@ Creates `design/user-flow/` in the current repo, so every other user-flow skill 
 
 ## 1. Ask (one message, skip anything the prompt already answered)
 - **Where the designs live:** a Paper file link, a Figma file link, and/or "the codebase only". For Paper and Figma, which page has the finished screens.
-- **Where maps and explorations go:** a page in the same file. Offer to create one called "User Journey".
+- **Where boards go:** a page for maps (offer "User Journey"), and a page for explorations (offer "Exploration"). Both are in the same file as the confirmed screens. Mark any older exploration file as legacy, so no skill writes to it.
+- **The rules:** the app's copy rules (vocabulary, banned words, what never to guess) and product rules (what may be asked, when). Read them from AGENTS.md, CLAUDE.md, a spec or a story page if they exist. Draft them, and confirm with the user.
 - **The persona:** a name and a line about them. Offer to draft it from a story or spec page if one exists.
 - **The router,** if there's a codebase: Expo Router, Next.js app router, React Navigation, or other. Detect it first, then confirm.
 
@@ -31,9 +32,9 @@ Don't export any images yet. The map skills export what they draw.
 
 ## 4. Write the project folder
 Copy `templates/project/` into `design/user-flow/`, then fill in:
-- `config.json`: sources, persona, theme, and empty `maps`.
+- `config.json`: sources (`screens_page`, `maps_page`, `explore_page`, plus their names), persona, theme, `rules` (copy, product, files), `plugin_version` (from `.claude-plugin/plugin.json`), `device_label`, and empty `maps`.
 - `config.local.json`: `{"plugin_root": "<resolved plugin root>"}`. It's gitignored, one per machine.
-- `gaps.json`: `{"gaps": []}`.
+- `gaps.json`: `{"gaps": []}`. `questions.json`: `{"questions": []}`. An empty `boards/` folder.
 - `.gitignore`: `img/`, `refs/`, `out/`, `config.local.json`.
 
 Then run `python3 design/user-flow/specs/_uf.py` to check the bootstrap finds the plugin. It should print nothing and exit 0.

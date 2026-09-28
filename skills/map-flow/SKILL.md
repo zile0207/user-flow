@@ -10,7 +10,7 @@ A flow map is one job, start to done. It's thinner than a journey:
 - Extra rows hold only the branches that change whether the job gets done.
 - Screens come from any journey. Gaps come from the registry, and new ones go into the registry too.
 
-**Plugin root:** this skill's real directory, two levels up. Read `references/nodes-and-layout.md` (Three levels, Flow maps) and `references/project-and-paper.md`.
+**Plugin root:** this skill's real directory, two levels up. Read `references/nodes-and-layout.md` (Levels, Flow maps) and `references/project-and-paper.md`.
 **Project:** `design/user-flow/`. If it's missing, run **init**.
 
 ## 1. The job
@@ -30,12 +30,12 @@ Also agree on the flow's number (the next free `no` in `maps.flows`), plus:
 - Run `references/coverage-checklist.md` on this path only. Missing steps become gaps in the registry under the journey that owns the area.
 
 ## 3. Spec, render, paste
-- Write `specs/f<no>.py` with `Map(<no>, P.img_dir)`.
+- Write `specs/f<no>.py` with `Map(<no>, P)` and `m.render(P, 'f<no>', …, P.panel('F<no>', x, y, w))`.
   - The number is only used for the header; gap ids come from the registry.
   - Row 1: start pill → screens, decisions, background work → the "Job done" exit pill.
   - Row 2 and down: recovery branches only.
   - Keep it tight. A flow that needs more than 3 rows is a journey. Say so and offer **map-journey**.
-- Render, then create the artboard `F<no> · <short job> · flow` to the right of the journeys. Paste, screenshot and review.
+- Render, then create the artboard `F<no> · <short job> · flow` to the right of the journeys. Paint it (`references/sync.md`), screenshot, review and commit.
 - Record it in `config.json` → `maps.flows` with the job sentence.
 
 ## 4. Report

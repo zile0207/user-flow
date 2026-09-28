@@ -1,6 +1,6 @@
 # Exploration board
 
-Every exploration is `uf.explore.render(SPEC, P.out('explore_<id>'))` from `specs/explore_<id>.py`. The layout is fixed:
+Every exploration is `uf.explore.render(P, 'explore_<id>', SPEC)` from `specs/explore_<id>.py`. Boards go on the explore page (`config.json` → `sources.paper.explore_page`). The layout is fixed:
 - a header bar
 - the left column: the gap, must do, where it sits, references
 - rounds on the right: directions side by side, each with its screens, labels and notes
@@ -31,7 +31,7 @@ SPEC = {
        'screens': [{'label': 'Main state', 'html': phone(...)}, {'label': 'Edge case', 'html': phone(...)}]}]}],
 }
 if __name__ == '__main__':
-    render(SPEC, P.out('explore_n2_1'))
+    render(P, 'explore_n2_1', SPEC)
 ```
 
 ## Rules
@@ -40,15 +40,17 @@ if __name__ == '__main__':
 - **Directions differ in substance:** size, how much happens, what the user decides. Not colour.
 - **Match the confirmed look.** Read the nearest confirmed neighbour with get_jsx, and add any missing part to `ui_kit.py`. No one-off HTML inside a spec.
 - **References come from the user first:** images or links in the prompt, or a frame named `Refs · <id>`. If there are none, use Mobbin: 2 or 3 queries aimed at the job the screen does. Keep 3 to 6, each with one line on what to take from it.
-- **The board** is an artboard named `Explore · <id> · <title>` on the maps page, to the right of the other maps. Record it in `config.json` → `maps.explorations`.
+- **The board** is an artboard named `Explore · <id> · <title>` on the explore page, to the right of the other explorations. Record it in `config.json` → `maps.explorations`.
+- **Review** every round with `design-review.md` before showing it, and the chosen direction again before confirming.
 
 ## The three replies after a round
 1. **Iterate on X:** add a round with `'from': 'X'` directions, give them the next letters, and put the user's words in `ask`.
 2. **More variants:** add a round of new directions with the next letters.
 3. **Confirm X:**
-   1. Set `status` to confirmed and re-render. This draws the outline and CHOSEN pill on the chosen direction, the CONFIRMED bar, and the header state. Only the header, the chosen direction's heading, the outline and the bar change, so you can replace just those nodes.
+   1. Set `status` to confirmed and re-render, then **sync** the board (`sync.md`). Sync replaces only the header, the chosen direction's heading and the bar, and inserts the outline.
    2. Export `X·1` as a PNG and save it as `img/<id with - for ·>_X.png` (e.g. `N2-1_A.png`).
    3. Run `P.set_gap(id, state='explored', chosen='X', round=n, img='N2-1_X', board='<artboard>')`.
-   4. Swap the gap's card on every map that shows it. Either re-render that map, or replace just the card node with `explored_card(SPEC, x, y, png)`, then update the counts.
+   4. Re-render and **sync** every map that shows the gap. The registry change swaps the card and the counts.
+   5. Offer **promote-design**, which moves the confirmed screens onto the screens page so developers build from one place.
 
 Keep the journey card's tag in step: "EXPLORING, ROUND n" while a board is open.

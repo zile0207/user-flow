@@ -1,0 +1,42 @@
+{
+  "gaps": [
+    {
+      "id": "N1·1",
+      "map": "J1",
+      "title": "Sign-in failed",
+      "need": "Say what went wrong and offer Try again.",
+      "where": "row 2",
+      "state": "todo"
+    },
+    {
+      "id": "N1·2",
+      "map": "J1",
+      "title": "Welcome back",
+      "need": "Returning account: skip setup.",
+      "where": "row 2",
+      "state": "explored",
+      "chosen": "A",
+      "round": 1,
+      "img": "N1-2_A"
+    },
+    {
+      "id": "N1·3",
+      "map": "J1",
+      "title": "The quiz",
+      "need": "After MVP.",
+      "where": "row 3",
+      "state": "later"
+    },
+    {
+      "id": "N1·4",
+      "map": "J1",
+      "title": "Sign-in failed, confirmed",
+      "need": "Say what went wrong.",
+      "where": "row 2",
+      "state": "explored",
+      "chosen": "A",
+      "round": 1,
+      "img": "N1-4_A"
+    }
+  ]
+}

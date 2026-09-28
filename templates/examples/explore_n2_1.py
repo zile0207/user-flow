@@ -85,4 +85,4 @@ SPEC = {
 }
 
 if __name__ == '__main__':
-    render(SPEC, P.out('explore_n2_1'))
+    render(P, 'explore_n2_1', SPEC)

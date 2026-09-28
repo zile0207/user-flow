@@ -4,7 +4,7 @@ from uf.jmap import Map, row_y
 
 W = 5440
 Y1, Y2, Y3, Y4 = row_y(1), row_y(2), row_y(3), row_y(4)
-m = Map(1, P.img_dir)
+m = Map(1, P)
 
 # ---------------- Row 1 · Jamie's path
 m.pill('start', 40, Y1, 180, 'Jamie opens Argo', 'Thu 2 Jul · 8:30 PM', 'start')
@@ -115,16 +115,10 @@ m.v('d11', 'g12', label="Don't Allow", lp=(2845, 2200), lw=90)
 m.h('e12', 'g12', dash=True)
 
 if __name__ == '__main__':
-    m.render(P.out('j1'), W,
+    m.render(P, 'j1', W,
              'Journey 1 · Getting in', 'From install to the first open, and what comes back later · Mon 28 Sep 2026',
              "Every way into Argo. Jamie's path runs along the top in coral, and every other way through branches off it and joins back. Dashed cards are screens we still need to design: each one says what it has to show.",
              [(1, "JAMIE'S PATH", 'Thu 2 Jul, 8:30 to 8:52 PM', True), (2, 'OTHER WAYS THROUGH ONBOARDING', '', False),
               (3, 'ON A LATER OPEN', 'what was skipped comes back once, where it is needed', False)],
-             (3800, 2240, 1600, 'DECISIONS · MON 28 SEP', 'Amber is still open', [
-                 (1, 'Interests: the 14 onboarding words for now. The Profile page will match them. Confirm with the developers.', True),
-                 (2, 'Continue works with nothing picked. Plans stay generic, like Skip.', False),
-                 (3, 'Email sign-in: password, or a code sent to the email? Pick one before N1·2 is designed.', True),
-                 (4, 'The quiz comes after MVP. For MVP, A7·1 shows only Save these.', False),
-                 (5, 'A returning account on a new phone skips onboarding but is asked for location and alerts.', False),
-                 (6, 'Closed mid-onboarding: it starts again from 1.', False)]),
+             P.panel('J1', 3800, 2240, 1600),
              dividers=(960, 1692))

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Map States"
+  short_description: "Every state one piece of UI can show, in priority order"

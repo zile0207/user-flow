@@ -4,7 +4,7 @@ from uf.jmap import Map, row_y
 
 W, H = 5400, 3860
 Y1, Y2, Y3, Y4, Y5 = 585, 1285, 1985, 2685, 3385
-m = Map(2, P.img_dir)
+m = Map(2, P)
 
 # ---------------- Row 1 · Jamie's first link
 m.pill('e_j1', 40, Y1, 220, 'From 1 · First open', 'the top asks for a link', 'entry')
@@ -168,16 +168,11 @@ m.e([m.c('e71', 'b'), (450, 3060), (3000, 3060), m.c('e72', 't')], label='Taps a
 m.h('e72', 'g_share2', label='Share', lw=50)
 m.e([m.c('e72', 'b'), (3000, 3760), (3700, 3760), m.c('g_edit', 'b')], label='Edit', lp=(3350, 3760))
 
-m.render(P.out('j2'), W,
-         'Journey 2 · Collecting', 'From a link to places to a board · Mon 28 Sep 2026',
-         "Every way a video becomes places in a board. Jamie's first link runs along the top in coral; rows 4 and 5 follow Jamie on Thu 24 Sep. Grey paths are every other way through. Dashed cards are screens we still need to design.",
-         [(1, "JAMIE'S FIRST LINK", 'Thu 2 Jul, 8:43 to 8:48 PM', True), (2, 'OTHER WAYS IN, AND WHILE ARGO READS', '', False),
-          (3, "WHEN ARGO CAN'T READ IT", '', False), (4, 'SORTING INTO BOARDS', 'Jamie, Thu 24 Sep, 7:35 PM', True),
-          (5, 'COMING BACK TO LINKS AND BOARDS', 'Jamie, Thu 24 Sep, 6:42 PM', True)],
-         (3900, 3180, 1460, 'OPEN QUESTIONS', 'Answer these before the dashed cards get designed', [
-             (1, 'Does a link that is reading take over the top? Chapter D says no, J3 shows yes. Rows 2 and 3 use J3 as a what-if.', True),
-             (2, 'Paste: iOS asks "Allow Paste" every time unless Argo uses the system Paste button. Check with the developers.', True),
-             (3, 'After Make board on a second board: land on the new board, or back where Jamie was?', True),
-             (4, 'Stop reading: keep the places found so far, or drop them all?', True),
-             (5, 'Remove this link: do its places leave their boards too?', True),
-             (6, 'Is sharing a board (a view-only link) in the MVP?', True)]))
+if __name__ == '__main__':
+    m.render(P, 'j2', W,
+             'Journey 2 · Collecting', 'From a link to places to a board · Mon 28 Sep 2026',
+             "Every way a video becomes places in a board. Jamie's first link runs along the top in coral; rows 4 and 5 follow Jamie on Thu 24 Sep. Grey paths are every other way through. Dashed cards are screens we still need to design.",
+             [(1, "JAMIE'S FIRST LINK", 'Thu 2 Jul, 8:43 to 8:48 PM', True), (2, 'OTHER WAYS IN, AND WHILE ARGO READS', '', False),
+              (3, "WHEN ARGO CAN'T READ IT", '', False), (4, 'SORTING INTO BOARDS', 'Jamie, Thu 24 Sep, 7:35 PM', True),
+              (5, 'COMING BACK TO LINKS AND BOARDS', 'Jamie, Thu 24 Sep, 6:42 PM', True)],
+             P.panel('J2', 3900, 3180, 1460))

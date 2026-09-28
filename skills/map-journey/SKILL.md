@@ -10,7 +10,7 @@ A journey map is one area of the app, drawn as a full flowchart:
 - Every other way through branches off it and joins back.
 - Each screen that doesn't exist yet is a dashed gap card with an id.
 
-**Plugin root:** this skill's real directory, two levels up. Read `references/nodes-and-layout.md` (all of it) and `references/project-and-paper.md`. Reference specs: `templates/examples/j1.py` and `j2.py`.
+**Plugin root:** this skill's real directory, two levels up. Read `references/nodes-and-layout.md` (all of it), `references/sync.md` and `references/project-and-paper.md`. Reference specs: `templates/examples/j1.py` and `j2.py`.
 **Project:** `design/user-flow/`. If it's missing, run **init**.
 
 ## 1. Scope
@@ -30,16 +30,18 @@ A journey map is one area of the app, drawn as a full flowchart:
 ## 3. Spec
 - Export the screens you need: `img/<node id>.png`.
 - Write `specs/j<no>.py`, following the examples:
-  - `from _uf import P`, `from uf.jmap import Map, row_y`, `m = Map(<no>, P.img_dir)`
+  - `from _uf import P`, `from uf.jmap import Map, row_y`, `m = Map(<no>, P)`
   - Rows via `row_y(n)`, nodes via `m.seq(...)`, or explicit x following the spacing rules.
   - Gaps are always `m.gap(id, x, y, **P.g(gid))`.
   - Arrows are labelled with what caused them. Only the persona's path uses `'coral'`.
-  - `m.render(P.out('j<no>'), W, title, right, story, rows, panel, dividers)`. The panel holds this journey's open questions.
+  - `m.render(P, 'j<no>', W, title, right, story, rows, P.panel('J<no>', x, y, w))`.
+  - Questions the inventory raised go in with `P.add_question('J<no>', text)`. The panel renders from them.
+  - Copy in notes and needs follows `config.json` → `rules`.
 - Run it. Fix any failed check in the spec.
 
 ## 4. Paste and review
-- Create the artboard `<no> · <Name> · journey map` right of the existing journeys, then paste (parallel subagents for more than 15 chunks).
-- Screenshot it. Look for overlapping labels, crowded lanes, and arrows that cross where they could go round. Fix them in the spec, re-render and re-paste.
+- Create the artboard `<no> · <Name> · journey map` right of the existing journeys. Paint it in full (`references/sync.md`), then `--commit`.
+- Screenshot it. Look for overlapping labels, crowded lanes, and arrows that cross where they could go round. Fix them in the spec, re-render, then **sync-board**.
 - Record the artboard in `config.json` → `maps.journeys`. If the master map exists, add the new gaps to their area in `specs/master.py`.
 
 ## 5. Report

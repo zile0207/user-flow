@@ -1,0 +1,3 @@
+interface:
+  display_name: "Sync Board"
+  short_description: "Update a Paper board to match its spec, only what changed"

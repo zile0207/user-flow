@@ -1,8 +1,8 @@
 """Flow maps (master · journey · flow): a spec of nodes and edges in, Paper HTML chunks out.
 Rules: references/nodes-and-layout.md."""
 import math
-from . import base
-from .base import t, dump, INK, MUTED, LINE, GREY, AMBER
+from . import base, board
+from .base import t, INK, MUTED, LINE, GREY, AMBER
 
 # ---- the grid (see JOURNEY_TEMPLATE.md · Layout)
 CW, CH, TH = 200, 520, 390        # card, and the screen thumbnail inside it
@@ -23,10 +23,11 @@ def row_label_top(n):
 
 
 class Map:
-    def __init__(self, journey_no=None, img_dir='.'):
-        """journey_no: the number used in gap ids (N<no>·<n>). img_dir: the project's img folder (absolute)."""
+    def __init__(self, journey_no, project):
+        """journey_no: the number used in gap ids (N<no>·<n>). project: from `from _uf import P`."""
         self.J = journey_no
-        self.IMG = img_dir
+        self.P = project
+        self.IMG = project.img_dir
         self.N = {}
         self.E = []
 
@@ -35,11 +36,11 @@ class Map:
         """A designed screen. img = file name in img/ (no .png), ref = User Flow ID like 'E7·5'."""
         self.N[i] = dict(kind='card', x=x, y=y - ATTACH, w=CW, h=CH, img=img, ref=ref, title=title, note=note, jamie=jamie)
 
-    def gap(self, i, x, y, title, need, gid=None, state='todo', later=False, chosen=None, round=None, img=None):
+    def gap(self, i, x, y, title, need, gid=None, state='todo', later=False, chosen=None, round=None, img=None, screen_ids=None):
         """A screen that needs design. gid = 'N2·3' (stable, never renumber).
         state: todo | exploring | explored (then chosen, round, img) ; later=True for after-MVP."""
         if later: state = 'later'
-        self.N[i] = dict(kind='gap', x=x, y=y - ATTACH, w=CW, h=CH, title=title, need=need, gid=gid, state=state, chosen=chosen, round=round, img=img)
+        self.N[i] = dict(kind='gap', x=x, y=y - ATTACH, w=CW, h=CH, title=title, need=need, gid=gid, state=state, chosen=chosen, round=round, img=img, screen_ids=screen_ids)
 
     def dia(self, i, cx, y, text, sys=False):
         """A decision. sys=False: the user decides (white). sys=True: Argo or the phone decides (ink)."""
@@ -101,7 +102,7 @@ class Map:
     # ---------------- counts
     def counts(self):
         cards = sum(1 for d in self.N.values() if d['kind'] == 'card')
-        explored = sum(1 for d in self.N.values() if d['kind'] == 'gap' and d['state'] == 'explored')
+        explored = sum(1 for d in self.N.values() if d['kind'] == 'gap' and d['state'] in ('explored', 'promoted'))
         todo = sum(1 for d in self.N.values() if d['kind'] == 'gap' and d['state'] in ('todo', 'exploring'))
         later = sum(1 for d in self.N.values() if d['kind'] == 'gap' and d['state'] == 'later')
         dias = sum(1 for d in self.N.values() if d['kind'] == 'dia')
@@ -138,6 +139,12 @@ class Map:
                     + t(d['ref'], 11, 14, 700, ref_col, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK) + t(d['note'], 12, 16, 500, MUTED) + '</div></div>')
         if k == 'gap':
             g, st = d['gid'], d['state']
+            if st == 'promoted':
+                sid = (d.get('screen_ids') or [g])[0]
+                return (f'<div layer-name="{sid} · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
+                        f'<img src="paper-asset://{self.IMG}/{d["img"]}.png" style="width:180px;height:390px;border-radius:10px;border:1px solid {LINE};object-fit:cover;flex-shrink:0" />'
+                        '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">' + t(f'{sid} · FROM {g}', 11, 14, 700, MUTED, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK)
+                        + t(f'Designed in Explore · {g} ({d["chosen"]}).', 12, 16, 500, MUTED) + '</div></div>')
             if st == 'explored':
                 return (f'<div layer-name="{g} · {d["title"]} · explored" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
                         f'<div style="position:relative;width:180px;height:390px;flex-shrink:0"><img src="paper-asset://{self.IMG}/{d["img"]}.png" style="width:180px;height:390px;border-radius:10px;border:1px solid {LINE};object-fit:cover" />'
@@ -191,6 +198,7 @@ class Map:
         return pts
 
     def edge_html(self, ed):
+        """Returns (key, arrow svg, label html or None). The key is a hash of the route, so it survives reordering."""
         pts = ed['p']; col = base.ACCENT if ed['c'] == 'coral' else GREY; sw = 2.5 if ed['c'] == 'coral' else 2
         xs = [p[0] for p in pts]; ys = [p[1] for p in pts]; pad = 10
         x0, y0 = min(xs) - pad, min(ys) - pad
@@ -207,9 +215,11 @@ class Map:
         halo = self._trim(line, 12, 12)
         dstr = lambda P: 'M' + ' L'.join(f'{x:.1f} {y:.1f}' for x, y in P)
         dash = ' stroke-dasharray="6 5"' if ed['d'] else ''
-        out = (f'<svg layer-name="Arrow" width="{w:.0f}" height="{hh:.0f}" viewBox="0 0 {w:.0f} {hh:.0f}" style="position:absolute;left:{x0:.0f}px;top:{y0:.0f}px">'
+        key = 'e' + board.h(repr([(round(x), round(y)) for x, y in pts]))[:8]
+        svg = (f'<svg layer-name="Arrow" width="{w:.0f}" height="{hh:.0f}" viewBox="0 0 {w:.0f} {hh:.0f}" style="position:absolute;left:{x0:.0f}px;top:{y0:.0f}px">'
                f'<path d="{dstr(halo)}" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="butt" stroke-linejoin="round"/>'
                f'<path d="{dstr(line)}" fill="none" stroke="{col}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"{dash}/>{head}</svg>')
+        lab_html = None
         if ed['l']:
             lab = ed['l']; lp = ed['lp']
             if not lp:
@@ -218,40 +228,50 @@ class Map:
             lines = max(1, math.ceil((len(lab) * 6.6) / (lw - 12)))
             lh = lines * 15 + 6
             lc = base.ACCENT if ed['c'] == 'coral' else MUTED
-            out += (f'<div layer-name="Label · {lab}" style="position:absolute;left:{lp[0]-lw/2:.0f}px;top:{lp[1]-lh/2:.0f}px;width:{lw}px;background:#FFFFFF;border-radius:6px;padding:3px 4px;box-sizing:border-box;display:flex;justify-content:center">'
-                    + t(lab, 12, 15, 600, lc, 'text-align:center;') + '</div>')
-        return out
+            lab_html = (f'<div layer-name="Label · {lab}" style="position:absolute;left:{lp[0]-lw/2:.0f}px;top:{lp[1]-lh/2:.0f}px;width:{lw}px;background:#FFFFFF;border-radius:6px;padding:3px 4px;box-sizing:border-box;display:flex;justify-content:center">'
+                        + t(lab, 12, 15, 600, lc, 'text-align:center;') + '</div>')
+        return key, svg, lab_html
 
-    def chunks(self, per_nodes=3, per_edges=9):
-        ids = list(self.N)
-        out = []
-        for i in range(0, len(ids), per_nodes):
-            out.append(''.join(self.node_html(k, self.N[k]) for k in ids[i:i + per_nodes]))
-        for i in range(0, len(self.E), per_edges):
-            out.append(''.join(self.edge_html(ed) for ed in self.E[i:i + per_edges]))
-        return out
-
-    def render(self, folder, W, title, right, story, rows, panel_spec=None, dividers=()):
-        """Everything for one journey artboard. rows: [(row_no, title, sub, jamie?)]. Returns (W, H)."""
+    def render(self, P, name, W, title, right, story, rows, panel_spec=None, dividers=(), kind='journey'):
+        """Paint one map as keyed elements (see board.py). rows: [(row_no, title, sub, persona_path?)].
+        panel_spec: (x, y, w, title, sub, items) or P.panel('J2', x, y, w). Returns the sync plan."""
         self.check()
         designed, todo, later, dias = self.counts()
         stats = [(str(designed), 'designed screens', INK), (str(todo), 'to design', AMBER)]
         if later: stats.append((str(later), 'after MVP', '#6B7678'))
         stats.append((str(dias), 'decisions', INK))
-        hdr = header(W, title, right, story, stats,
-                     [(row_label_top(n), f'{n} · {tt}', sub, base.ACCENT if jm else INK) for n, tt, sub, jm in rows], self.J, dividers)
-        extra = [panel(*panel_spec)] if panel_spec else []
+        B = board.Board(P, name)
+        for k, html in header(W, title, right, story, stats,
+                              [(row_label_top(n), f'{n} · {tt}', sub, base.ACCENT if jm else INK) for n, tt, sub, jm in rows],
+                              self.J, dividers, P.cfg, kind):
+            B.add(k, html)
+        if panel_spec:
+            B.add('panel', panel(*panel_spec))
+        for k, d in self.N.items():
+            B.add(k, self.node_html(k, d))
+        for ed in self.E:
+            k, svg, lab = self.edge_html(ed)
+            k = B.add(k, svg)
+            if lab:
+                B.add(k + 'l', lab)
         H = max(d['y'] + d['h'] for d in self.N.values()) + 80
         for ed in self.E:
             H = max(H, max(p[1] for p in ed['p']) + 60)
-        dump(hdr + extra + self.chunks(), folder)
-        print(f'artboard {W} x {H} · designed {designed} · to design {todo} · after MVP {later} · decisions {dias} · edges {len(self.E)}')
-        return W, H
+        if panel_spec:
+            H = max(H, panel_spec[1] + 120 + 60 * math.ceil(len(panel_spec[5]) / 2))
+        print(f'designed {designed} · to design {todo} · after MVP {later} · decisions {dias} · edges {len(self.E)}')
+        return B.emit(W, H)
 
 
-def header(width, title, right, story, stats, rows, journey_no=None, dividers=()):
+def header(width, title, right, story, stats, rows, journey_no=None, dividers=(), cfg=None, kind='journey'):
+    """Returns keyed elements: header, story, legend, coverage, row<n>, divider<n>."""
+    cfg = cfg or {}
+    persona = cfg.get('persona', {}).get('name', 'The persona')
+    app = cfg.get('project', 'The app')
+    screens_name = cfg.get('sources', {}).get('paper', {}).get('screens_page_name', 'the screens page')
+    device = cfg.get('device_label', 'Mobile · iPhone')
     bar = (f'<div layer-name="Header bar" style="position:absolute;left:40px;top:40px;width:{width-80}px;height:56px;background:{INK};border-radius:14px;display:flex;align-items:center;padding:0 20px;gap:16px;box-sizing:border-box">'
-           + t('Mobile · iPhone', 13, 18, 500, '#9AA4A6') + '<div style="width:1px;height:20px;background:#3A4245"></div>'
+           + t(device, 13, 18, 500, '#9AA4A6') + '<div style="width:1px;height:20px;background:#3A4245"></div>'
            + t(title, 17, 22, 700, '#FFFFFF') + '<div style="flex:1"></div>' + t(right, 13, 18, 500, '#9AA4A6')
            + f'<div style="width:10px;height:10px;border-radius:5px;background:{base.ACCENT}"></div></div>')
     st = f'<div layer-name="Story line" style="position:absolute;left:40px;top:116px;width:2600px">' + t(story, 17, 24, 500, MUTED) + '</div>'
@@ -262,26 +282,26 @@ def header(width, title, right, story, stats, rows, journey_no=None, dividers=()
         return f'<svg width="44" height="12" viewBox="0 0 44 12"><path d="M2 6 L34 6" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"{d}/><path d="M43 6 L33 11.5 L33 0.5 Z" fill="{c}"/></svg>'
     def dg(fill): return f'<svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 1.5 L18.5 10 L10 18.5 L1.5 10 Z" fill="{fill}" stroke="{INK}" stroke-width="1.5" stroke-linejoin="round"/></svg>'
     j = journey_no or 1
-    items = [item(ln(base.ACCENT, sw=2.5), "Jamie's path"), item(ln(GREY), 'Another way through'), item(ln(GREY, True), 'Remembered for later'),
-             item(dg('#FFFFFF'), 'The user decides'), item(dg(INK), 'Argo or the phone decides'),
-             item('<div style="width:14px;height:20px;border-radius:3px;border:1.5px solid #C9D0D2;background:#FFFFFF"></div>', 'Designed screen (E7·5 = User Flow E7, step 5)'),
+    items = [item(ln(base.ACCENT, sw=2.5), f"{persona}'s path"), item(ln(GREY), 'Another way through'), item(ln(GREY, True), 'Remembered for later'),
+             item(dg('#FFFFFF'), 'The user decides'), item(dg(INK), f'{app} or the phone decides'),
+             item('<div style="width:14px;height:20px;border-radius:3px;border:1.5px solid #C9D0D2;background:#FFFFFF"></div>', f'Designed screen (id from {screens_name})'),
              item('<div style="width:14px;height:20px;border-radius:3px;border:1.5px dashed #B4BDBF;background:#F1F3F3"></div>', f'Needs design (N{j}·3 = journey {j}, gap 3)'),
              item(f'<div style="width:14px;height:20px;border-radius:3px;border:1px solid #C9D0D2;background:#FFFFFF;position:relative"><div style="position:absolute;left:2px;top:2px;width:8px;height:4px;border-radius:2px;background:{base.ACCENT}"></div></div>', 'Explored and chosen'),
              item('<div style="width:14px;height:20px;border-radius:3px;border:1.5px dashed #D3D8DA;background:#FFFFFF"></div>', 'After MVP'),
-             item(f'<div style="width:30px;height:16px;border-radius:5px;border:1.5px solid {GREY};background:#EEF1F2"></div>', 'Argo works in the background'),
-             item(f'<div style="width:30px;height:16px;border-radius:3px;border:1.5px dashed {INK};background:#FFFFFF"></div>', 'Outside Argo'),
-             item(f'<div style="width:30px;height:14px;border-radius:7px;border:1.5px solid {INK};background:#FFFFFF"></div>', 'Continues in another journey'),
+             item(f'<div style="width:30px;height:16px;border-radius:5px;border:1.5px solid {GREY};background:#EEF1F2"></div>', f'{app} works in the background'),
+             item(f'<div style="width:30px;height:16px;border-radius:3px;border:1.5px dashed {INK};background:#FFFFFF"></div>', f'Outside {app}'),
+             item(f'<div style="width:30px;height:14px;border-radius:7px;border:1.5px solid {INK};background:#FFFFFF"></div>', 'Continues in another map'),
              item(f'<div style="width:30px;height:14px;border-radius:7px;border:1.5px dashed {GREY};background:#F1F3F3"></div>', 'Comes from another step')]
     leg = f'<div layer-name="Legend" style="position:absolute;left:40px;top:172px;width:{width-760}px;display:flex;flex-wrap:wrap;align-items:center;column-gap:28px;row-gap:12px">' + ''.join(items) + '</div>'
     stt = (f'<div layer-name="Coverage" style="position:absolute;left:{width-660}px;top:160px;width:620px;display:flex;justify-content:flex-end;gap:36px">'
            + ''.join(f'<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end">' + t(n, 32, 36, 700, c, 'letter-spacing:-0.02em;') + t(l, 12, 16, 500, MUTED, 'white-space:nowrap;') + '</div>' for n, l, c in stats) + '</div>')
-    rl = ''
-    for y, title_, sub, col in rows:
-        rl += (f'<div layer-name="Row label" style="position:absolute;left:40px;top:{y}px;display:flex;align-items:baseline;gap:10px">'
-               + t(title_, 12, 16, 700, col, 'letter-spacing:0.08em;white-space:nowrap;') + (t(sub, 13, 16, 500, MUTED, 'white-space:nowrap;') if sub else '') + '</div>')
-    for dy in dividers:
-        rl += f'<div layer-name="Divider" style="position:absolute;left:40px;top:{dy}px;width:{width-80}px;height:1px;background:#EEF0F1"></div>'
-    return [bar + st, leg + stt, rl]
+    out = [('header', bar), ('story', st), ('legend', leg), ('coverage', stt)]
+    for i, (y, title_, sub, col) in enumerate(rows):
+        out.append((f'row{i+1}', f'<div layer-name="Row label" style="position:absolute;left:40px;top:{y}px;display:flex;align-items:baseline;gap:10px">'
+                    + t(title_, 12, 16, 700, col, 'letter-spacing:0.08em;white-space:nowrap;') + (t(sub, 13, 16, 500, MUTED, 'white-space:nowrap;') if sub else '') + '</div>'))
+    for i, dy in enumerate(dividers):
+        out.append((f'divider{i+1}', f'<div layer-name="Divider" style="position:absolute;left:40px;top:{dy}px;width:{width-80}px;height:1px;background:#EEF0F1"></div>'))
+    return out
 
 
 def panel(x, y, w, title, sub, items):
@@ -289,7 +309,7 @@ def panel(x, y, w, title, sub, items):
     half = (len(items) + 1) // 2
     def col(its):
         return '<div style="flex:1;display:flex;flex-direction:column;gap:14px">' + ''.join(
-            '<div style="display:flex;gap:12px">' + t(str(n), 15, 21, 700, AMBER if op else MUTED, 'width:18px;flex-shrink:0;') + t(tx, 15, 21, 500, INK if op else MUTED) + '</div>'
+            '<div style="display:flex;gap:12px">' + t(str(n), 15, 21, 700, AMBER if op else MUTED, 'width:auto;flex-shrink:0;white-space:nowrap;') + t(tx, 15, 21, 500, INK if op else MUTED) + '</div>'
             for n, tx, op in its) + '</div>'
     return (f'<div layer-name="Decisions and open questions" style="position:absolute;left:{x}px;top:{y}px;width:{w}px;background:#F6F7F7;border-radius:20px;padding:32px 36px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box">'
             f'<div style="display:flex;align-items:baseline;gap:12px">' + t(title, 12, 16, 700, INK, 'letter-spacing:0.08em;') + t(sub, 13, 16, 500, MUTED) + '</div>'

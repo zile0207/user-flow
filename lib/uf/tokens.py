@@ -28,6 +28,7 @@ SVG_ATTR = {'fill': 'fill', 'stroke': 'stroke', 'stop-color': 'stopColor', 'stop
 FACES = {'thin': 100, 'extralight': 200, 'light': 300, 'regular': 400, 'book': 400, 'medium': 500, 'semibold': 600,
          'bold': 700, 'extrabold': 800, 'black': 900}
 BOUND = ('var(', 'color-mix(')
+TEXT_ONLY = ('fontSize', 'lineHeight', 'fontWeight', 'fontFamily', 'letterSpacing')
 
 
 def _px(v):
@@ -85,6 +86,9 @@ class Tokens:
         self.snap = {k: {self._norm(k, a) or a: b for a, b in tab.items()} for k, tab in d.get('snap', {}).items()}
         keep = d.get('keep', {})
         self.keep = {k: {self._norm(k, x) or x for x in vs} for k, vs in keep.items() if isinstance(vs, list)}
+        mig = d.get('migration', {})               # tokens being retired: a layer still bound to one is rebound
+        self.rebind = {k: v for k, v in mig.get('alpha_to_color_mix', {}).items()}
+        self.rebind.update(mig.get('alias_then_delete', {}))
         self.weights = self.by.get('fontWeight', {})
         self.families = self.by.get('fontFamily', {})
         big = [(_px(k), v) for k, v in self.by.get('radius', {}).items() if (_px(k) or 0) >= 999]
@@ -149,6 +153,9 @@ class Tokens:
             if not kind or prop == 'fontFamily' or prop in upd:
                 continue
             v = str(v).strip()
+            if v.startswith('var(') and v[4:-1].strip() in self.rebind:
+                upd[prop] = self.rebind[v[4:-1].strip()]
+                continue
             if v.startswith(BOUND) or v in ('none', 'transparent', 'currentColor', 'inherit', 'auto', 'normal') or not v:
                 continue
             if kind in ('spacing', 'radius') and ' ' in v:   # shorthand: every part must have a token
@@ -248,11 +255,14 @@ def pair(tree, jsx, out, bad):
     if not _fits(tree, jsx):
         bad.append((tree['id'], f"{tree['type']} vs <{jsx['tag']}>")); return
     style = dict(jsx.get('style', {}))
+    if tree['type'] != 'Text':                        # a frame's font size is only an inherited default: Paper keeps it literal
+        for k in TEXT_ONLY:
+            style.pop(k, None)
     if tree['type'] in ('SVG', 'SVGVisualElement'):
         for a, prop in SVG_ATTR.items():
             if a in jsx.get('attrs', {}):
                 style[prop] = jsx['attrs'][a]
-    out.append((tree['id'], style, (tree['w'], tree['h'])))
+    out.append((tree['id'], style, (tree['w'] or _px(style.get('width', '')), tree['h'] or _px(style.get('height', '')))))
     if tree['type'] == 'Text':
         return                                            # styled runs inside a text are not layers
     kids = _els(jsx)

@@ -617,7 +617,7 @@ def _bound_path(P):
 
 def _board_frames(P, name):
     d = os.path.join(P.root, 'out', name)
-    out = []
+    out = json.load(open(os.path.join(d, 'frames.json'))) if os.path.exists(os.path.join(d, 'frames.json')) else []
     if os.path.exists(os.path.join(d, 'frames_needed.txt')):
         out += [l.strip() for l in open(os.path.join(d, 'frames_needed.txt')) if l.strip()]
     if os.path.exists(os.path.join(d, 'local_needed.json')):

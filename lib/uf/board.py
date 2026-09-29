@@ -163,6 +163,7 @@ class Board:
 
     def emit(self, W, H, page='maps'):
         W, H = round(W * self.scale), round(H * self.scale)
+        json.dump(sorted(base.USED), open(os.path.join(self._dir(), 'frames.json'), 'w'))
         for f in ('local_needed.json', 'frames_needed.txt'):
             if os.path.exists(os.path.join(self._dir(), f)):
                 os.remove(os.path.join(self._dir(), f))

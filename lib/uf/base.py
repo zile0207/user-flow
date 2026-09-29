@@ -30,6 +30,7 @@ MISSING = set()           # frames a render needed but the cache doesn't have ye
 LOCAL_MODE = False        # the maps file has a Frames page: one real copy of each screen, typed once
 LOCAL = {}                # key ('<node>' or '<node>+<sheet node>') → the copy's node id on the Frames page
 LOCAL_NEEDED = {}         # key → (node, sheet) a render needed that isn't on the Frames page yet
+USED = set()              # every library frame a render showed (bind-tokens binds a board's frames from this)
 
 
 def frame_key(node, sheet=None):
@@ -60,6 +61,7 @@ def screen(node, w, radius=10, layer='Screen', sheet=None):
     Never an image. Boards are scaled (Board(scale=…)) so this box comes out at the device width: the zoom then
     cancels out and is dropped, and the frame sits at its real size, 1:1. The box clips frames taller than the device."""
     assert node, 'a screen needs the Paper node id of a real frame (boards never show images)'
+    USED.update(nid(n) for n in (node, sheet) if n)
     z = w / PW
     h = w * PH / PW
     box = (f'<div layer-name="{layer}" style="position:relative;width:{w}px;height:{h:.4f}px;flex-shrink:0;overflow:hidden;'

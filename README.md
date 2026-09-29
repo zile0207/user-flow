@@ -22,6 +22,7 @@ Every board is generated from code (`lib/uf`), so it looks the same whichever ag
 ```
 git clone https://github.com/zile0207/user-flow && user-flow/scripts/link-skills.sh
 ```
+The skills are linked into `$CODEX_HOME/skills` (Codex, default `~/.codex/skills`) and `~/.agents/skills`. Restart Codex to pick them up; `git pull` keeps them current.
 
 Needs the Paper MCP. Figma sources need the Figma MCP. Reference search uses the Mobbin MCP. The renderer needs Python 3.9+ and has no dependencies.
 

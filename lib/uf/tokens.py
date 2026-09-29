@@ -385,8 +385,11 @@ def tokenize(html, tokens, left=None):
 def copy_root(card):
     """A board card's JSX → the copied screen inside it (card > Screen box > wrapper > frame), or the node itself."""
     kids = _els(card)
-    if kids and kids[0]['style'].get('width') == '390px' and _els(kids[0]) and _els(_els(kids[0])[0]):
-        return _els(_els(kids[0])[0])[0]
+    if kids and kids[0]['style'].get('width') == '390px' and _els(kids[0]):
+        inner = _els(kids[0])
+        if inner[0]['style'].get('position') == 'absolute' and _els(inner[0]):
+            return _els(inner[0])[0]                  # an inlined copy: box > wrapper > frame
+        return inner[-1]                             # a placed screen: slot > [label, frame]
     return card
 
 

@@ -28,6 +28,10 @@ frames-from-transcript <jsonl>          store every get_jsx result found in a Cl
 frames-local <board>                    the copies to make on the Frames page for a board (each screen typed once)
 frames-local-commit <tree or id lines>  record the Frames page copies (names start "copy:"), so boards clone them
 tree <saved tool result> <out file>     turn a get_tree_summary result (even the harness's saved JSON) into "<id> <name>" lines
+stage <board>                           placed screens: duplicate the frames a board's empty slots need onto the staging page
+stage-commit <board> <new ids…>         name and lay out the staged copies; says what to tell the person
+place <board> <page tree> <board tree>  after the person pasted them: move each copy into its slot (one move_nodes call)
+stage-clear <board>                     delete the staged copies from the library file
 bind-from-transcript <jsonl>            store every get_tree_summary and get_jsx result on the library file from a session
 bind-read <frame> <tree file> <jsx file> store one frame's two reads (the harness's saved results work as they are)
 bind-plan <batch> <frame…> | --board <b> the update_styles payloads that bind these frames to the design tokens
@@ -189,9 +193,12 @@ def ops(P, args):
     plan = json.load(open(path))
     if plan['mode'] != 'sync':
         print(f'{name}: paint in full (out/{name}/full), see sync.md → First paint'); return
-    fid = P.cfg.get('sources', {}).get('paper', {}).get('file_id', '<file id>')
+    fid, _ = _board_file(P, name)
     art = plan.get('artboard')
     by = lambda k: [o for o in plan['ops'] if o['op'] == k]
+    placed = _placed(P, name)
+    slots = {s['key']: s for s in json.load(open(os.path.join(P.root, 'out', name, 'place.json')))} \
+        if os.path.exists(os.path.join(P.root, 'out', name, 'place.json')) else {}
     if any(o.get('node') is None for o in plan['ops'] if o['op'] != 'insert'):
         print('Run --drift first: some ops have no node id yet (or their element is gone: paint in full).'); sys.exit(2)
     step = 0
@@ -205,6 +212,15 @@ def ops(P, args):
         head('rename_nodes')
         print(json.dumps({'fileId': fid, 'updates': [{'nodeId': o['node'], 'name': o['name']} for o in by('rename')]}, ensure_ascii=False))
     reps = by('replace')
+    keep = [o for o in reps if o['key'] in placed and slots.get(o['key'], {}).get('node') == placed[o['key']]['node']]
+    if keep:
+        head('move_nodes: take the placed screens out of the cards being replaced, so the replace keeps them')
+        print(json.dumps({'fileId': fid, 'moves': [{'nodeId': placed[o['key']]['screen'], 'parentId': art} for o in keep]}))
+    for o in reps:                         # a card now showing a different frame: its old screen goes with the card
+        if o['key'] in placed and o not in keep:
+            placed.pop(o['key'])
+    if reps:
+        json.dump(placed, open(_placed_path(P, name), 'w'), indent=1, ensure_ascii=False)
     if reps:
         head(f'replace: {len(reps)} × write_html(mode="replace"), one per line: <node id> <file> <left> <top>'
              + (' · 7 or more: give these lines to the replace subagent (sync.md)' if len(reps) >= 7 else ''))
@@ -214,6 +230,10 @@ def ops(P, args):
     if moves or reps:
         head('update_styles: the moves below, plus one entry per replaced element (its NEW node id, the left/top above)')
         print(json.dumps({'fileId': fid, 'updates': [{'nodeIds': [o['node']], 'styles': {'left': f"{o['left']}px", 'top': f"{o['top']}px"}} for o in moves]}, ensure_ascii=False))
+    if keep:
+        head('move_nodes + update_styles: put each kept screen back, into the NEW card\'s "slot · …" node from its write_html result')
+        for o in keep:
+            print(f"  {placed[o['key']]['screen']} → slot · {placed[o['key']]['name']} (in the new {o['key']} card); then left/top 0px, position absolute")
     ins = by('insert')
     if ins:
         head(f'insert: write_html(mode="insert-children", targetNodeId="{art}") with each file')
@@ -223,6 +243,9 @@ def ops(P, args):
         head('artboard size: update_styles')
         W, H = plan['size']
         print(json.dumps({'fileId': fid, 'updates': [{'nodeIds': [art], 'styles': {'width': f'{W}px', 'height': f'{H}px'}}]}))
+    unplaced = [k for k in slots if k not in placed]
+    if unplaced:
+        head(f'{len(unplaced)} slots are empty after this sync: `_uf.py stage {name}`, the person copies them over, then `_uf.py place`')
     if not step:
         print('nothing to paint')
     print(f'\nThen: screenshot the changed nodes at scale 1, and `python3 specs/<spec>.py --commit {art}`.')
@@ -793,6 +816,146 @@ def bind_status(P, args):
         print(f'{args[0]}: {len(fr) - len(todo)} of {len(fr)} frames bound' + (f' · to bind: {" ".join(todo)}' if todo else ''))
 
 
+# ---------- placed screens: the person copies the library frames over, the agent moves them into the board's slots ----------
+
+def _board_file(P, name):
+    """The Paper file a board lives in: its entry in config.json → maps (file_id), else sources.paper.file_id."""
+    maps = P.cfg.get('maps', {})
+    for group in ('journeys', 'flows', 'states', 'explorations'):
+        for e in maps.get(group, []) or []:
+            if isinstance(e, dict) and str(e.get('spec', '')).endswith(f'/{name}.py') and e.get('file_id'):
+                return e['file_id'], e.get('page')
+    return P.cfg.get('sources', {}).get('paper', {}).get('file_id', '<file id>'), None
+
+
+def _placed_path(P, name):
+    return os.path.join(P.root, 'boards', f'{name}.placed.json')
+
+
+def _placed(P, name):
+    p = _placed_path(P, name)
+    return json.load(open(p)) if os.path.exists(p) else {}
+
+
+def _slots(P, name):
+    p = os.path.join(P.root, 'out', name, 'place.json')
+    if not os.path.exists(p):
+        print(f'{name}: render the spec first (no out/{name}/place.json).'); sys.exit(2)
+    return json.load(open(p))
+
+
+def stage(P, args):
+    """The library frames a board's empty slots need, duplicated onto the staging page for the person to copy over."""
+    name = args[0]
+    paper = P.cfg.get('sources', {}).get('paper', {})
+    staging = paper.get('staging_page')
+    if not staging:
+        print('No staging page: set config.json → sources.paper.staging_page (a page in the library file).'); sys.exit(2)
+    placed = _placed(P, name)
+    todo = [s for s in _slots(P, name) if s['key'] not in placed]
+    if not todo:
+        print(f'{name}: every slot already holds its screen.'); return
+    bound = json.load(open(_bound_path(P))) if os.path.exists(_bound_path(P)) else {}
+    unbound = sorted({s['node'] for s in todo if s['node'] not in bound})
+    if unbound and _tokens_path(P):
+        print(f'  first: {len(unbound)} of these frames are not bound to tokens yet (bind-tokens), or copies arrive untagged: {" ".join(unbound)}')
+    json.dump(todo, open(os.path.join(P.root, 'out', name, 'stage.json'), 'w'), indent=1, ensure_ascii=False)
+    print(f'{name}: {len(todo)} screens to stage on the staging page ({staging}) of the library file, one per slot, in this order:')
+    for i, s in enumerate(todo, 1):
+        print(f'  {i:>2}. {s["node"]}  → {s["name"]}')
+    print('\n1. duplicate_nodes, one call:')
+    print(json.dumps({'fileId': P.library_file_id, 'nodes': [{'id': s['node'], 'parentId': f'root_node_{staging}'} for s in todo]}))
+    print(f'2. `_uf.py stage-commit {name} <the new node ids, in the same order>`: it prints the renames and the grid.')
+
+
+def stage_commit(P, args):
+    name, ids = args[0], [board_nid(a) for a in args[1:]]
+    todo = json.load(open(os.path.join(P.root, 'out', name, 'stage.json')))
+    if len(ids) != len(todo):
+        print(f'{len(todo)} staged screens but {len(ids)} ids given: give every new id, in the order of `stage`.'); sys.exit(2)
+    for s, i in zip(todo, ids):
+        s['staged'] = i
+    json.dump(todo, open(os.path.join(P.root, 'out', name, 'stage.json'), 'w'), indent=1, ensure_ascii=False)
+    paper = P.cfg.get('sources', {}).get('paper', {})
+    fid, page = _board_file(P, name)
+    print('1. rename_nodes (each copy is named after its slot, so it can be found again after the person pastes it):')
+    print(json.dumps({'fileId': P.library_file_id, 'updates': [{'nodeId': s['staged'], 'name': s['name']} for s in todo]}, ensure_ascii=False))
+    print('2. update_styles, a grid on the staging page (6 per row):')
+    print(json.dumps({'fileId': P.library_file_id, 'updates': [
+        {'nodeIds': [s['staged']], 'styles': {'left': f'{(i % 6) * 470}px', 'top': f'{(i // 6) * 980}px'}} for i, s in enumerate(todo)]}))
+    print(f'3. Tell the person (then wait): "On the {paper.get("staging_page_name", "staging")} page of the library file, '
+          f'select all {len(todo)} frames and copy. Open the board\'s file ({fid}){", page " + page if page else ""} and paste them '
+          f'anywhere on that page, with nothing selected. Tell me when they are there."')
+    print(f'4. Then `_uf.py place {name} <page tree> <board tree>`.')
+
+
+def _tree_lines(path):
+    """Every "Type "name" (id)" line of a get_tree_summary result (any depth), as (indent, type, name, id)."""
+    from .tokens import result_text
+    raw = result_text(open(path).read())
+    m = re.search(r'"summary":\s*("(?:[^"\\]|\\.)*")', raw)
+    text = json.loads(m.group(1)) if m else raw
+    out = []
+    for line in text.splitlines():
+        mm = re.match(r'^( *)(\w+) "((?:[^"\\]|\\.)*)" \(([0-9A-Z]+-[0-9A-Z]+)\)', line)
+        if mm:
+            out.append((len(mm.group(1)) // 2, mm.group(2), mm.group(3), mm.group(4)))
+    return out
+
+
+def place(P, args):
+    """Move the pasted frames into their slots. <page tree>: get_tree_summary(root_node_<board page>, depth 1);
+    <board tree>: get_tree_summary(<artboard>, depth 2)."""
+    name, page_tree, board_tree = args[0], args[1], args[2]
+    fid, _ = _board_file(P, name)
+    slots = {s['name'][:44]: s for s in _slots(P, name)}
+    placed = _placed(P, name)
+    pasted = {}                                  # top-level frames on the page, by name
+    for depth, typ, nm, i in _tree_lines(page_tree):
+        if depth == 1:
+            pasted.setdefault(nm[:44], []).append(i)
+    slot_ids, card = {}, None
+    for depth, typ, nm, i in _tree_lines(board_tree):
+        if depth == 1:
+            card = nm.split(' · ')[0][len(name) + 1:] if nm.startswith(f'{name}:') else None
+        elif depth == 2 and nm.startswith('slot · ') and card:
+            slot_ids[nm[len('slot · '):][:44]] = (i, card)
+    moves, frames, missing = [], [], []
+    for short, s in slots.items():
+        if s['key'] in placed:
+            continue
+        if short not in slot_ids:
+            missing.append(f"{s['name']}: no slot on the board (paint or sync it first)"); continue
+        got = pasted.get(short)
+        if not got:
+            missing.append(f"{s['name']}: not pasted on the page yet"); continue
+        slot, key = slot_ids[short]
+        moves.append({'nodeId': got[0], 'parentId': slot})
+        frames.append(got[0])
+        placed[key] = {'name': s['name'], 'node': s['node'], 'screen': got[0]}
+    for m in missing:
+        print('  missing:', m)
+    if not moves:
+        print(f'{name}: nothing to place.'); return
+    print(f'1. move_nodes, one call ({len(moves)} screens into their slots):')
+    print(json.dumps({'fileId': fid, 'moves': moves}))
+    print('2. update_styles, one call (pin each screen to its slot\'s corner):')
+    print(json.dumps({'fileId': fid, 'updates': [{'nodeIds': frames, 'styles': {'position': 'absolute', 'left': '0px', 'top': '0px'}}]}))
+    json.dump(placed, open(_placed_path(P, name), 'w'), indent=1, ensure_ascii=False)
+    print(f'Recorded in boards/{name}.placed.json. Screenshot two cards at scale 1, then clear the staging page: `_uf.py stage-clear {name}`.')
+
+
+def stage_clear(P, args):
+    name = args[0]
+    p = os.path.join(P.root, 'out', name, 'stage.json')
+    staged = [s['staged'] for s in json.load(open(p)) if s.get('staged')] if os.path.exists(p) else []
+    if not staged:
+        print(f'{name}: nothing staged.'); return
+    print('delete_nodes, one call (the copies left on the staging page):')
+    print(json.dumps({'fileId': P.library_file_id, 'nodeIds': staged}))
+    os.remove(p)
+
+
 def _val(v):
     try:
         return json.loads(v)
@@ -867,6 +1030,14 @@ def main(P, argv):
         bind_from_transcript(P, args[0])
     elif cmd == 'bind-plan':
         bind_plan(P, args)
+    elif cmd == 'stage':
+        stage(P, args)
+    elif cmd == 'stage-commit':
+        stage_commit(P, args)
+    elif cmd == 'place':
+        place(P, args)
+    elif cmd == 'stage-clear':
+        stage_clear(P, args)
     elif cmd == 'bind-refused':
         bind_refused(P, args)
     elif cmd == 'bind-check':
@@ -904,6 +1075,12 @@ def main(P, argv):
         clones = json.load(open(os.path.join(P.root, 'out', name, 'clones.json')))
         want = None if args == ['all'] else {board_nid(a) for a in args}
         keys = [k for k, ns in clones.items() if want is None or want & set(ns)]
+        placed = _placed(P, name)                  # placed mode: the card is repainted and its slot staged again
+        for k, v in list(placed.items()):
+            if want is None or v['node'] in want:
+                keys.append(k); placed.pop(k)
+        if os.path.exists(_placed_path(P, name)):
+            json.dump(placed, open(_placed_path(P, name), 'w'), indent=1, ensure_ascii=False)
         sp = os.path.join(P.root, 'boards', f'{name}.json')
         st = json.load(open(sp))
         for e in st['elements']:

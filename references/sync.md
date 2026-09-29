@@ -10,14 +10,28 @@ python3 specs/<spec>.py
 ```
 It prints the element count, the full-paint chunk count, the artboard size, any layout warnings, and the sync plan: either `no committed state yet → paint in full`, or `N insert · N replace · N move · N rename · N delete`. Fix warnings (labels overlapping, a row without a label) in the spec before painting.
 
+## Placed screens (library in another file, `sources.paper.screens: "placed"`)
+Paper can't copy a frame between files through the MCP, and retyping a screen as HTML is slow (15–60 KB each). So on these boards the agent never pastes screens. The board paints with empty, named slots (`slot · 3.1 · Profile tab`); the person copies the frames over in the Paper app, which takes seconds; the agent moves each one into its slot.
+1. **Tag first:** the frames must be bound to tokens before they are staged (**bind-tokens**), so the copies carry the tags.
+2. **Stage:** `_uf.py stage <board>` lists one frame per empty slot and prints one `duplicate_nodes` call that puts copies on the staging page of the library file (`sources.paper.staging_page`). Run it, then `_uf.py stage-commit <board> <the new ids, in order>`: it prints a `rename_nodes` call (each copy named after its slot) and an `update_styles` grid. Run both.
+3. **Hand over:** tell the person exactly what `stage-commit` printed: select every frame on the staging page, copy, and paste them anywhere on the board's page with nothing selected. Paint the board (below) while they do it.
+4. **Place,** once they say the frames are there:
+   - `get_tree_summary(root_node_<board page>, depth 1)`: the pasted frames, by name.
+   - `get_tree_summary(<artboard>, depth 2)`: the slots, inside the cards.
+   - `_uf.py place <board> <page tree> <board tree>` prints one `move_nodes` call (each frame into its slot) and one `update_styles` (pinned at left/top 0). It lists any slot whose frame isn't on the page yet. Run both calls, then screenshot two cards at scale 1.
+5. **Clean up:** `_uf.py stage-clear <board>` prints the `delete_nodes` call for the copies left on the staging page.
+
+A placed screen stays through every sync: when a card is replaced, `ops` moves its screen out first and back into the new card's slot after. A card that now shows a different frame, or whose frame changed on the library (`_uf.py stale <board> <node>`), gets an empty slot again: stage and place it the same way.
+
 ## First paint (mode: full)
 1. Create the artboard at the printed size, on the right page. Maps go on the maps page and explorations on the explore page (see `config.json` → `sources.paper`). `create_artboard` ignores left and top: place it afterwards with `update_styles` (left, top), 80px or more right of the last board. If the board already exists unkeyed (painted before sync existed), delete its children first.
 2. Paste the chunks in `out/<board>/full/` into the artboard with `write_html(insert-children)`, byte for byte, following `full/paint.json`:
+   - **Placed boards** have no screen HTML, so every chunk is small: paste them yourself, in order. Skip the rest of this step.
    - **Ask the user first** whether to use subagents for this paint. Subagents are never assumed.
    - `parallel`: the chunks that hold screens. They never overlap each other. With subagents allowed, split them across **at most 3 paste subagents at once**, up to 6 chunks each, with the prompt below (always `model: "sonnet"`, Sonnet 5.5, at low effort; never haiku: pasting is verbatim copying, so it needs no more). Without subagents, paste them yourself, one call at a time.
    - `serial`: arrows, labels, panels. After every screen chunk is on the canvas, paste these in order (one subagent, or yourself), so they sit on top of the screens.
    - Screenshot only after the pastes are done (a screenshot sent alongside shows the board before the paste).
-3. **Commit straight away:** `python3 specs/<spec>.py --commit <artboard id>`. The board now matches the spec, so from here on every change is a sync.
+3. **Commit straight away:** `python3 specs/<spec>.py --commit <artboard id>`. The board now matches the spec, so from here on every change is a sync. (Placed boards: then place the screens, above.)
 4. Record the artboard in `config.json` → `maps`.
 5. Review: screenshot the whole board, then each row at scale 1 (a whole-board screenshot is too small to read 12px labels). Fix problems in the spec, re-render, and sync.
 
@@ -34,6 +48,7 @@ It prints the element count, the full-paint chunk count, the artboard size, any 
 3. **Run the ops.** `python3 design/user-flow/specs/_uf.py ops <board>` (add `--discard` to also delete the hand-added nodes) prints every call below with its arguments ready to paste, in order. What each step is:
    - `delete`: one `delete_nodes` call with every `node`.
    - `rename`: one `rename_nodes` call: `{nodeId: node, name: name}` for each. (The element didn't change, only its key.)
+   - Placed boards: before the replaces, one `move_nodes` takes the placed screens out of the cards being replaced (to the artboard); after them, each goes back into its new card's `slot · …` node. `ops` prints both steps, and says when slots are left empty (stage and place them).
    - `replace`: `write_html(mode='replace', targetNodeId=node, html=<file>)`, one call each. Note the new node id it returns. `write_html(replace)` keeps the old node's position, so every replace also needs its `left`/`top` set (next step).
    - `move` and replaced positions: one `update_styles` call, one entry per node: `{nodeIds: [node], styles: {left: '<left>px', top: '<top>px'}}`. Use the new node ids for replaced elements.
    - `insert`: each `ins_NN.html` file with `write_html(mode='insert-children', targetNodeId=<artboard>)`.

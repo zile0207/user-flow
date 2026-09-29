@@ -46,6 +46,7 @@ Screens use the project's design tokens, never literal values. This skill binds 
 7. **Refresh painted copies** (only if a board already shows these frames):
    - Boards that inline library frames: `bind-from-transcript` has already put the tagged JSX in the frame cache. Run `_uf.py stale <board> <frame…>`, then **sync-board**.
    - Boards that clone a Frames page: remake those copies (`references/project-and-paper.md` → Frames page), then `stale` and sync.
+   - Boards with placed screens: `_uf.py stale <board> <frame…>`, sync (the cards get empty slots), then stage and place those screens again (`sync.md` → Placed screens).
 8. **Report:**
    - the frames bound (`bind-status`);
    - the values left literal and why (the keep list, or the user's choice);

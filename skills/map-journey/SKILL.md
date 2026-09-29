@@ -33,12 +33,11 @@ A journey map is one area of the app, drawn as a full flowchart:
 ## 3. Spec
 - Cards name the real frames by node id (`node='PY1-0'`), taken from the library where the screen exists there. Never export or show images of screens.
 - **Top-only frames** (the index says "top only": the top's states, whose sheet is empty) need a sheet: `m.card(..., sheet='<node>')` names the library frame whose sheet the persona is looking at in that moment (the tab from the story: Explore, Links, Boards, Plans or Profile). The card shows the top over that real sheet.
-- **Library in another file** (`sources.paper.library_file_id` differs from `file_id`): the maps file keeps one real copy of each screen on its **Frames page** (`sources.paper.frames_page`), typed once; cards are live copies of those, so boards stay cheap to paint and sync. The order, fast:
-  1. Render. It lists the screens not on the Frames page yet.
-  2. `_uf.py frames-local j<no>`. If it lists frames to fetch: `get_jsx(fileId = library file, nodeId, format "inline-styles")` for each (one call at a time; a subagent can do them all if the user allows subagents), then `_uf.py frames-from-transcript <session .jsonl>` (in Claude Code: the newest .jsonl in `~/.claude/projects/<this repo>/`, or the subagent's), no retyping; otherwise `_uf.py frames-save`. Run `frames-local` again.
-  3. Make the listed copies. Ask the user whether to use subagents: if yes, split the list across at most 3 paste subagents at once (always `model: "sonnet"`, Sonnet 5.5, low effort; never haiku), each doing create_artboard + write_html per line; if no, make them yourself, one call at a time. Then one update_styles for their positions; then `_uf.py frames-local-commit <Frames page tree>` (only the `copy:` lines are needed).
-  4. Render again: no markers left. Paint the board (`sync.md` → First paint).
-- **Tokens:** if the project has a token file (`sources.paper.tokens`), run **bind-tokens** on the board's library frames before its first paint (`_uf.py bind-status j<no>` lists the unbound ones), so the copies arrive tagged.
+- **Library in another file** (`sources.paper.library_file_id` differs from `file_id`): Paper can't copy frames between files through the MCP. How screens get onto the board is `sources.paper.screens`:
+  - `"placed"` (use this): the board paints with empty named slots; the agent stages the frames on the library's staging page, the person copies them over in the Paper app, and the agent moves each into its slot. Nothing is retyped. `sync.md` → Placed screens.
+  - no setting, with a Frames page (`sources.paper.frames_page`): each screen typed once onto the maps file's Frames page (`_uf.py frames-local j<no>`), boards clone it. Costs every screen twice in the file.
+  - no setting, no Frames page: each card inlines its frame from `get_jsx` (`_uf.py frames j<no>`, then `frames-from-transcript`). Slow: every screen is retyped as 15–60 KB of HTML.
+- **Tokens:** if the project has a token file (`sources.paper.tokens`), run **bind-tokens** on the board's library frames before its first paint or staging (`_uf.py bind-status j<no>` lists the unbound ones), so the copies arrive tagged.
 - Write `specs/j<no>.py`, following the examples:
   - `from _uf import P`, `from uf.jmap import Map, row_y`, `m = Map(<no>, P)`
   - Rows via `row_y(n)`, nodes via `m.seq(...)`, or explicit x following the spacing rules.
@@ -49,7 +48,8 @@ A journey map is one area of the app, drawn as a full flowchart:
 - Run it. Fix any failed check and any warning (labels overlapping, a row with no label) in the spec.
 
 ## 4. Paste and review
-- Create the artboard `<no> · <Name> · journey map` right of the existing journeys. Paint it in full (`references/sync.md`), then `--commit`.
+- Placed screens: stage them first (`_uf.py stage j<no>`) and hand over to the person, so they copy while you paint.
+- Create the artboard `<no> · <Name> · journey map` right of the existing journeys. Paint it in full (`references/sync.md`), then `--commit`. Placed screens: when the person says the frames are pasted, `_uf.py place`, then `stage-clear`.
 - Screenshot the whole board, then each row at scale 1 (the whole board is too small to read labels). Look for overlapping labels, crowded lanes, and arrows that cross where they could go round. Fix them in the spec, re-render, then **sync-board**.
 - Record the artboard in `config.json` → `maps.journeys`. If the master map exists, add the new gaps to their area in `specs/master.py`.
 

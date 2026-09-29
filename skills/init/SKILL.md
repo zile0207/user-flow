@@ -12,7 +12,8 @@ Creates `design/user-flow/` in the current repo, so every other user-flow skill 
 
 ## 1. Ask (one message, skip anything the prompt already answered)
 - **Where the designs live:** a Paper file link, a Figma file link, and/or "the codebase only". For Paper and Figma, which page has the finished screens.
-- **Where boards go:** a page for maps (offer "User Journey"), and a page for explorations (offer "Exploration"). Both are in the same file as the confirmed screens. If they don't exist yet, offer to create them (`create_page`).
+- **Where boards go:** a page for maps (offer "User Journey"), and a page for explorations (offer "Exploration"), usually in the same file as the confirmed screens. If they don't exist yet, offer to create them (`create_page`).
+- **Boards in another file than the library** (big apps split journeys across files to stay under Paper's size limit): record `library_file_id`, and set `screens: "placed"` with a `staging_page` in the library file (offer to create "Screens Needed"). The agent stages the frames each board needs there, and the person copies them over (`references/sync.md` → Placed screens).
 - **The library:** the page that holds every confirmed screen of the app, however messy (`library_page`). Journeys place these screens in context, and nothing becomes a needs-design gap while the library has it. Confirmed explorations are promoted there too (`promote_page`), unless the user names another page.
 - **Legacy files:** any older file to mark as legacy (`legacy_file_ids`), so no skill writes to it.
 - **A readme per file:** offer an `agents.md` page in each Paper file with one readme frame: what the file and its pages are for, how the project's files connect, the rules for agents, and the product. Record each in `config.json` → `sources.paper.files` (`file_id`, `name`, `readme`: page and frame, `pages`). Every skill reads them once per session.
@@ -39,7 +40,7 @@ Never export screen images. Boards show real frames (live copies), named by node
 
 ## 4. Write the project folder
 Copy `templates/project/` into `design/user-flow/`, then fill in:
-- `config.json`: sources (`screens_page`, `maps_page`, `explore_page`, each with its `_name`; `library_page` + `_name`; `promote_page`; `legacy_file_ids`), persona, theme, `screen_ids` (how the screens page names screens, and the fallback from `references/project-and-paper.md` → Screen ids), `rules` (copy, product, files), `plugin_version` (from `.claude-plugin/plugin.json`), `device_label`, and empty `maps`.
+- `config.json`: sources (`screens_page`, `maps_page`, `explore_page`, each with its `_name`; `library_page` + `_name`; `promote_page`; `legacy_file_ids`; with the library in another file, `library_file_id`, `screens`, `staging_page` + `_name`), persona, theme, `screen_ids` (how the screens page names screens, and the fallback from `references/project-and-paper.md` → Screen ids), `rules` (copy, product, files), `plugin_version` (from `.claude-plugin/plugin.json`), `device_label`, and empty `maps`.
 - `config.local.json`: `{"plugin_root": "<resolved plugin root>"}`. It's gitignored, one per machine.
 - `gaps.json`: `{"gaps": []}`. `questions.json`: `{"questions": []}`. `boards/.gitkeep`, so git keeps the empty folder.
 - `.gitignore`: copy `templates/project/gitignore` to `design/user-flow/.gitignore` (it ignores `refs/`, `out/`, `config.local.json`).

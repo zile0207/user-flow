@@ -32,6 +32,8 @@ LOCAL_MODE = False        # the maps file has a Frames page: one real copy of ea
 LOCAL = {}                # key ('<node>' or '<node>+<sheet node>') → the copy's node id on the Frames page
 LOCAL_NEEDED = {}         # key → (node, sheet) a render needed that isn't on the Frames page yet
 USED = set()              # every library frame a render showed (bind-tokens binds a board's frames from this)
+PLACED_MODE = False       # sources.paper.screens == 'placed': the person copies the frames over; the board leaves slots
+PLACE = []                # [{name, node}] the slots a render left, in order (placed mode)
 
 
 def frame_key(node, sheet=None):
@@ -69,6 +71,12 @@ def screen(node, w, radius=10, layer='Screen', sheet=None, name=None):
            f'border-radius:{radius}px;background:#FFFFFF">')
     if not CROSS_FILE and not sheet:
         return box + f'<x-paper-clone node-id="{nid(node)}" style="position:absolute;left:0px;top:0px;zoom:{z:.6f}" /></div>'
+    if PLACED_MODE and not sheet:   # an empty slot: the real frame is copied over by hand, then moved in (place)
+        nm = name or FRAME_NAMES.get(nid(node), nid(node))
+        PLACE.append({'name': nm, 'node': nid(node)})
+        return (f'<div layer-name="slot · {nm}" style="position:relative;width:{w}px;height:{h:.4f}px;flex-shrink:0;overflow:hidden;'
+                f'border-radius:{radius}px;background:#F1F3F3"><div style="padding:8px;font-size:9px;line-height:12px;color:#8E999C">'
+                f'{nm} · from the library ({nid(node)})</div></div>')
     if LOCAL_MODE:              # a live copy of this screen's copy on the Frames page (same file: cheap)
         key = frame_key(node, sheet)
         if key in LOCAL:

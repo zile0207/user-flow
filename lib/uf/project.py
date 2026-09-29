@@ -42,7 +42,8 @@ class Project:
         self.library_file_id = paper.get('library_file_id') or paper.get('file_id')
         base.CROSS_FILE = self.library_file_id != paper.get('file_id')
         base.FRAMES_DIR = os.path.join(root, 'frames')
-        base.LOCAL_MODE = bool(base.CROSS_FILE and paper.get('frames_page'))
+        base.PLACED_MODE = bool(base.CROSS_FILE and paper.get('screens') == 'placed')
+        base.LOCAL_MODE = bool(base.CROSS_FILE and not base.PLACED_MODE and paper.get('frames_page'))
         lp = os.path.join(root, 'frames_local.json')
         base.LOCAL = {k: v['id'] for k, v in json.load(open(lp)).items()} if os.path.exists(lp) else {}
         lib = os.path.join(root, 'library.json')

@@ -462,6 +462,43 @@ def test_binding_pairs_layers_and_groups_the_same_change():
     assert rep2['bad'], 'a tree that does not line up with the JSX must be reported, not guessed'
 
 
+def test_placed_screens_are_staged_then_moved_into_slots_and_kept_across_a_replace():
+    """Placed mode: no screen HTML is pasted. The board leaves named slots; stage duplicates the frames onto the
+    staging page; the person copies them over; place moves each into its slot; a sync keeps them across a replace."""
+    root = fresh()
+    cfg = json.load(open(os.path.join(root, 'config.json')))
+    cfg['sources']['paper'].update(library_file_id='LIBFILE', screens='placed', staging_page='p-9-0')
+    json.dump(cfg, open(os.path.join(root, 'config.json'), 'w'))
+    out = run(root, 'journey.py')
+    assert '3 screens are slots' in out, out   # 2 cards and 1 found gap
+    html = ''.join(open(os.path.join(root, 'out', 'journey', 'full', f)).read() for f in os.listdir(os.path.join(root, 'out', 'journey', 'full')) if f.endswith('.html'))
+    assert 'layer-name="slot · A·1 · Welcome"' in html and 'x-paper-clone' not in html and 'frame S1-0 not fetched' not in html
+    slots = json.load(open(os.path.join(root, 'out', 'journey', 'place.json')))
+    assert [(x['key'], x['node']) for x in slots][:2] == [('s1', 'S1-0'), ('s2', 'S2-0')] and len(slots) == 3, slots
+    out = run(root, '_uf.py', 'stage', 'journey')
+    assert '"parentId": "root_node_p-9-0"' in out and '"fileId": "LIBFILE"' in out, out
+    out = run(root, '_uf.py', 'stage-commit', 'journey', 'Q1-0', 'Q2-0', 'Q3-0')
+    assert '"name": "A·1 · Welcome"' in out and 'select all 3 frames' in out, out
+    d = tempfile.mkdtemp()
+    page = os.path.join(d, 'page.txt'); brd = os.path.join(d, 'board.txt')
+    open(page, 'w').write('Page "p" (root_node_p-2) 0×0\n  Frame "journey map" (A-0) 1×1\n  Frame "A·1 · Welcome" (P1-0) 390×844\n  Frame "A·2 · Home" (P2-0) 390×844\n')
+    open(brd, 'w').write('Frame "journey map" (A-0) 1×1\n  Frame "journey:s1 · A·1 · Welcome" (C1-0) 1×1\n    Frame "slot · A·1 · Welcome" (L1-0) 390×844\n'
+                         '  Frame "journey:s2 · A·2 · Home" (C2-0) 1×1\n    Frame "slot · A·2 · Home" (L2-0) 390×844\n')
+    out = run(root, '_uf.py', 'place', 'journey', page, brd)
+    assert '{"nodeId": "P1-0", "parentId": "L1-0"}' in out and '{"nodeId": "P2-0", "parentId": "L2-0"}' in out, out
+    placed = json.load(open(os.path.join(root, 'boards', 'journey.placed.json')))
+    assert placed['s1']['screen'] == 'P1-0'
+    run(root, 'journey.py', '--commit', 'A-0')
+    edit(os.path.join(root, 'specs', 'journey.py'), "note='First screen.'", "note='The first screen.'")
+    run(root, 'journey.py')
+    tree = os.path.join(d, 'tree.txt'); open(tree, 'w').write(open(brd).read())
+    open(tree, 'a').write(''.join(f'  Frame "journey:{k} · x" (Z{i}-0) 1×1\n' for i, k in enumerate(
+        e[0] for e in json.load(open(os.path.join(root, 'boards', 'journey.json')))['elements'] if e[0] not in ('s1', 's2'))))
+    run(root, 'journey.py', '--drift', tree)
+    out = run(root, '_uf.py', 'ops', 'journey')
+    assert '"nodeId": "P1-0", "parentId": "A-0"' in out, out           # taken out before the replace …
+    assert 'P1-0 → slot · A·1 · Welcome' in out, out                   # … and put back after
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

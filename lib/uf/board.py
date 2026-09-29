@@ -174,6 +174,15 @@ class Board:
             need = os.path.join(self._dir(), 'frames_needed.txt')
             open(need, 'w').write(''.join(f'{n}\n' for n in sorted(base.MISSING)))
             print(f'  {len(base.MISSING)} frames not fetched yet (they show as markers): `_uf.py frames {self.name}`')
+        slots = []                                    # placed mode: which element holds which slot
+        by_name = {p['name']: p['node'] for p in base.PLACE}
+        for k in self.keys:
+            for nm in re.findall(r'layer-name="slot · ([^"]+)"', self.html[k]):
+                slots.append({'key': k, 'name': nm, 'node': by_name.get(nm)})
+        json.dump(slots, open(os.path.join(self._dir(), 'place.json'), 'w'), indent=1, ensure_ascii=False)
+        if slots:
+            print(f'  {len(slots)} screens are slots: stage them for the person to copy over (`_uf.py stage {self.name}`), '
+                  f'then place them (`_uf.py place {self.name} …`)')
         full = self._dir('full'); sync = self._dir('sync')
         for d in (full, sync):
             for f in os.listdir(d):

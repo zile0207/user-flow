@@ -1,0 +1,3 @@
+interface:
+  display_name: "Bind Tokens"
+  short_description: "Bind a journey's library screens to the design tokens, in a few large calls"

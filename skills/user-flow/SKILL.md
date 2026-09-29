@@ -46,6 +46,7 @@ Every board shows screens as live copies of the real Paper frames (library first
 | **promote-design** | move a confirmed design onto the screens page for developers | "promote N2·1", "hand this to the devs", "publish the confirmed screens" |
 | **answer-questions** | answer open questions and apply what each answer changes | "answer the open questions", "Q1·3: code", "what's still undecided" |
 | **sync-board** | update a board on the canvas to match its spec | "sync journey 2", "refresh the maps", "the board looks out of date" |
+| **bind-tokens** | bind screens to the design tokens, one journey at a time | "tag journey 3 with the variables", "bind the onboarding screens to tokens", "which screens still use hex values?" |
 
 ## Routing rules
 Check these in order. The first that matches wins.
@@ -55,11 +56,12 @@ Check these in order. The first that matches wins.
 3. **Hand-off:** "promote", "hand off", "publish", "to the devs", "developers can build" → **promote-design**, even when the prompt names a gap id.
 4. **Answers and decisions:** a Q id with an answer ("Q1·3: code"), "decide", "undecided", "open questions" → **answer-questions**.
 5. **Sync:** "sync", "refresh", "update the board", "out of date", "repaint" → **sync-board**. If no board is named, sync every board the status lists as out of date; if none are, say so.
-6. **States of one surface:** "what shows when", "which wins", "states of the …" → **map-states**.
-7. **Audit:** "audit", "add the missing screens", "find and add the edge cases" → **audit-flow**. (Only asking what's missing → **ask-project**.)
-8. **Add one screen or state to a map:** "add a screen for …", "we need a state for …" → **audit-flow** with that one finding: check the map first (it may already be drawn, or already be a gap), then add it as a gap.
-9. **Design work:** a gap id (`N2·3`), or "explore", "design the …", "iterate on", "more variants", "mix", "confirm X" → **explore-design**. A gap named by title ("the email sign-in") is fine: explore-design matches it.
-10. **Maps:**
+6. **Tokens:** "token", "variable", "tag … with", "bind", "hex values", "literal values" → **bind-tokens**. With a journey or board named, bind that board's frames; with none, run `_uf.py bind-status` and offer the next unbound journey.
+7. **States of one surface:** "what shows when", "which wins", "states of the …" → **map-states**.
+8. **Audit:** "audit", "add the missing screens", "find and add the edge cases" → **audit-flow**. (Only asking what's missing → **ask-project**.)
+9. **Add one screen or state to a map:** "add a screen for …", "we need a state for …" → **audit-flow** with that one finding: check the map first (it may already be drawn, or already be a gap), then add it as a gap.
+10. **Design work:** a gap id (`N2·3`), or "explore", "design the …", "iterate on", "more variants", "mix", "confirm X" → **explore-design**. A gap named by title ("the email sign-in") is fine: explore-design matches it.
+11. **Maps:**
    - "everything", "all screens", "inventory" → **map-master**.
    - "map" + an area or section ("onboarding", "collecting") → **map-journey**. If a journey already covers that area, it updates that journey instead of making a new one.
    - "map" + a goal or job ("to plan a Saturday", "how Jamie plans a Saturday") → **map-flow**.

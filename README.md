@@ -41,6 +41,7 @@ Needs the Paper MCP. Figma sources need the Figma MCP. Reference search uses the
 | [`promote-design`](skills/promote-design/SKILL.md) | you or the agent | Moves a confirmed design onto the screens page with stable screen ids. |
 | [`answer-questions`](skills/answer-questions/SKILL.md) | you or the agent | Takes answers to open questions and applies what each one changes. |
 | [`sync-board`](skills/sync-board/SKILL.md) | you or the agent | Updates a board on the canvas to match its spec: only what changed, after checking for hand edits. |
+| [`bind-tokens`](skills/bind-tokens/SKILL.md) | you or the agent | Binds a journey's library screens to the design tokens (colours, type, radius, spacing, SVG strokes), in a few large calls. |
 
 In Claude Code the skills are namespaced: `/user-flow:user-flow`, `/user-flow:init`, and so on.
 
@@ -56,6 +57,7 @@ init ──> map-master ──> map-journey ──> map-flow        map-states
                       promote-design ──> screens page (X2·1) ──> developers
 
 every change ──> sync-board (only what changed; stops on hand edits)
+library frames ──> bind-tokens (one journey at a time) ──> copies made after it are tagged
 ```
 
 Boards are synced, not repainted: every element carries a key in its layer name, so a change only deletes, renames, replaces, moves or inserts what differs, after checking the board for hand edits.

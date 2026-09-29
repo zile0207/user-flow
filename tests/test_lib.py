@@ -418,6 +418,50 @@ def test_frames_page_types_each_screen_once_then_boards_clone_it():
     assert paint['parallel'] and paint['serial'] and 'layer-name="Screen"' in first
 
 
+def test_binding_pairs_layers_and_groups_the_same_change():
+    """get_tree_summary + get_jsx pair up by document order (SVG shapes too); the same change is one entry."""
+    from uf.tokens import Tokens, plan
+    d = tempfile.mkdtemp()
+    tp = os.path.join(d, 'tokens.json')
+    json.dump({'tokens': [
+        {'type': 'color', 'name': '--color-white', 'value': '#FFFFFF'},
+        {'type': 'color', 'name': '--color-gray-900', 'value': '#171B1D'},
+        {'type': 'fontFamily', 'name': '--font-sans', 'value': 'Switzer'},
+        {'type': 'fontWeight', 'name': '--font-weight-bold', 'value': 700},
+        {'type': 'fontSize', 'name': '--text-sm', 'value': '13px'},
+        {'type': 'lineHeight', 'name': '--leading-4_5', 'value': '18px'},
+        {'type': 'lineHeight', 'name': '--text-sm-line-height', 'value': 'var(--leading-4_5)'},
+        {'type': 'spacing', 'name': '--spacing-2', 'value': '8px'},
+        {'type': 'radius', 'name': '--radius-md', 'value': '8px'},
+        {'type': 'radius', 'name': '--radius-full', 'value': '999px'}],
+        'snap': {'radius': {'9px': 'var(--radius-md)'}},
+        'keep': {'color': ['#007AFF']}}, open(tp, 'w'))
+    tree = ('{"file": {}}{"summary": "Frame \\"Card\\" (A-0) 100×40\\n  Frame \\"Dot\\" (B-0) 20×20\\n'
+            '  Text \\"Hi\\" (C-0) 20×18 \\"Hi\\"\\n  Text \\"Yo\\" (D-0) 20×18 \\"Yo\\"\\n'
+            '  SVG \\"SVG\\" (E-0) 24×24\\n    SVGVisualElement \\"Path\\" (F-0) 8×8", "nodeId": "A-0"}')
+    jsx = """{"file": {}}(
+    <div style={{ backgroundColor: '#FFFFFF', gap: 8, borderRadius: '9px', color: '#007AFF' }}>
+      <div style={{ backgroundColor: '#171B1D', borderRadius: '10px' }} />
+      <div style={{ color: '#171B1D', fontFamily: '"Switzer-Bold", "Switzer", system-ui, sans-serif', fontSize: '13px', lineHeight: '18px' }}>Hi</div>
+      <div style={{ color: '#171B1D', fontFamily: '"Switzer-Bold", "Switzer", system-ui, sans-serif', fontSize: '13px', lineHeight: '18px' }}>Yo <span style={{ color: '#FFFFFF' }}>!</span></div>
+      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M0 0" fill="none" stroke="#FFFFFF80" /></svg>
+    </div>
+  )"""
+    chunks, rep = plan(Tokens(tp), {'A-0': (tree, jsx)})
+    assert not rep['bad'], rep['bad']
+    entries = {json.dumps(e['styles'], sort_keys=True): e['nodeIds'] for c in chunks for e in c}
+    text = {'color': 'var(--color-gray-900)', 'fontFamily': 'var(--font-sans)', 'fontWeight': 'var(--font-weight-bold)',
+            'fontSize': 'var(--text-sm)', 'lineHeight': 'var(--text-sm-line-height)'}
+    assert entries[json.dumps(text, sort_keys=True)] == ['C-0', 'D-0'], entries           # grouped; the span is no layer
+    assert entries[json.dumps({'backgroundColor': 'var(--color-white)', 'borderRadius': 'var(--radius-md)', 'gap': 'var(--spacing-2)'}, sort_keys=True)] == ['A-0']
+    assert entries[json.dumps({'backgroundColor': 'var(--color-gray-900)', 'borderRadius': 'var(--radius-full)'}, sort_keys=True)] == ['B-0']
+    assert entries[json.dumps({'stroke': 'color-mix(in oklab, var(--color-white) 50%, transparent)'}, sort_keys=True)] == ['F-0']
+    assert not rep['left'], rep['left']                   # #007AFF is kept on purpose, so it isn't reported
+    bad_tree = tree.replace('\\n  Text \\"Yo\\" (D-0) 20×18 \\"Yo\\"', '')
+    _, rep2 = plan(Tokens(tp), {'A-0': (bad_tree, jsx)})
+    assert rep2['bad'], 'a tree that does not line up with the JSX must be reported, not guessed'
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

@@ -13,9 +13,10 @@ It prints the element count, the full-paint chunk count, the artboard size, any 
 ## First paint (mode: full)
 1. Create the artboard at the printed size, on the right page. Maps go on the maps page and explorations on the explore page (see `config.json` → `sources.paper`). `create_artboard` ignores left and top: place it afterwards with `update_styles` (left, top), 80px or more right of the last board. If the board already exists unkeyed (painted before sync existed), delete its children first.
 2. Paste the chunks in `out/<board>/full/` into the artboard with `write_html(insert-children)`, byte for byte, following `full/paint.json`:
-   - `parallel`: the chunks that hold screens. They never overlap each other, so split them across **up to 5 paste subagents running at the same time** (model **haiku**: pasting is verbatim copying).
-   - `serial`: arrows, labels, panels. After every parallel agent has replied, paste these in order with **one** subagent, so they sit on top of the screens.
-   - Screenshot only after the paste agents reply (a screenshot sent alongside shows the board before the paste)., with the prompt below (up to 6 chunks each). Never run two paste agents on the same artboard at once: the layer order would interleave.
+   - **Ask the user first** whether to use subagents for this paint. Subagents are never assumed.
+   - `parallel`: the chunks that hold screens. They never overlap each other. With subagents allowed, split them across **at most 3 paste subagents at once**, up to 6 chunks each, with the prompt below (always `model: "sonnet"`, Sonnet 5.5, at low effort; never haiku: pasting is verbatim copying, so it needs no more). Without subagents, paste them yourself, one call at a time.
+   - `serial`: arrows, labels, panels. After every screen chunk is on the canvas, paste these in order (one subagent, or yourself), so they sit on top of the screens.
+   - Screenshot only after the pastes are done (a screenshot sent alongside shows the board before the paste).
 3. **Commit straight away:** `python3 specs/<spec>.py --commit <artboard id>`. The board now matches the spec, so from here on every change is a sync.
 4. Record the artboard in `config.json` → `maps`.
 5. Review: screenshot the whole board, then each row at scale 1 (a whole-board screenshot is too small to read 12px labels). Fix problems in the spec, re-render, and sync.
@@ -37,7 +38,7 @@ It prints the element count, the full-paint chunk count, the artboard size, any 
    - `move` and replaced positions: one `update_styles` call, one entry per node: `{nodeIds: [node], styles: {left: '<left>px', top: '<top>px'}}`. Use the new node ids for replaced elements.
    - `insert`: each `ins_NN.html` file with `write_html(mode='insert-children', targetNodeId=<artboard>)`.
    - If `size_changed`, set the artboard's width and height with `update_styles`.
-   - 7 or more replaces: hand them to one subagent with the replace prompt below (the `ops` lines are its input).
+   - 7 or more replaces: ask the user whether to use a subagent. If yes, hand them to one subagent with the replace prompt below (the `ops` lines are its input); if no, run them yourself in order.
 4. **Check:** screenshot each changed node at scale 1 (get_screenshot works per node). A whole-board screenshot is capped at 2000px, so use it only for layout, never to read labels.
 5. **Commit:** `python3 specs/<spec>.py --commit <artboard id>`.
 
@@ -47,7 +48,7 @@ When the plan is all zero, there is nothing to paint. Still run drift if the boa
 
 If a target is missing (the warning in step 2), or more than about 70% of the elements are replaced or inserted, paint in full instead: delete the artboard's children, paste `full/`, commit.
 
-## Paste subagent prompt (use exactly this; run it on the smallest model, haiku)
+## Paste subagent prompt (only when the user allows subagents; use exactly this; always run it on Sonnet 5.5 at low effort: `model: "sonnet"`, and say "low effort" at the top of the prompt)
 > You are pasting pre-generated HTML into a Paper design file. Do exactly this and nothing else.
 > First load the tool: call ToolSearch with query "select:mcp__paper__write_html" (max_results 1).
 > Then, for each file in this order: <absolute paths>
@@ -56,7 +57,7 @@ If a target is missing (the warning in step 2), or more than about 70% of the el
 > Do not call any other Paper tool. If a write fails, retry that same file once. If it fails again, stop and report the file and the error.
 > When done, reply with one line per file: the file name and "ok" or the error.
 
-## Replace subagent prompt (use exactly this)
+## Replace subagent prompt (only when the user allows subagents; use exactly this)
 > You are replacing elements in a Paper design file with pre-generated HTML. Do exactly this and nothing else.
 > First load the tools: call ToolSearch with query "select:mcp__paper__write_html,mcp__paper__update_styles" (max_results 2).
 > For each line below, in order: `<node id> <absolute file path> <left> <top>`

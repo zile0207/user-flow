@@ -29,6 +29,7 @@ description: Design a needs-design gap (N2·3 style id) on its own exploration b
 
 ## 3. Three directions
 - Read the nearest confirmed screen with get_jsx and extend `ui_kit.py` with any part you need. Screens are built only from ui_kit parts.
+- **Tokens:** when the project has a token file (`sources.paper.tokens`), ui_kit parts use `var(--token)` for every colour, size, radius and space (a transparent colour is `color-mix(in oklab, var(--token) N%, transparent)`). No hex values or bare pixel sizes that have a token.
 - **A, B and C must differ in substance:** how big, how much happens, what the person decides. Each gets:
   - one idea sentence
   - a main-state screen plus an edge case from the need (a different edge case per direction)

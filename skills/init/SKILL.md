@@ -34,6 +34,7 @@ Never export screen images. Boards show real frames (live copies), named by node
 - Write `design/user-flow/ui_kit.py` starting from `templates/project/ui_kit.py`. Copy the real values: font, ink and muted colours, the brand colour, radii, the button shapes, list rows, the status bar, and any signature block (like Argo's red top).
   - Every part is a small function that returns HTML. Explorations build screens only from these parts.
 - Set `theme.accent` to the brand colour and `theme.font` to the font family in `config.json`.
+- **Design tokens:** if the project keeps a token file (Paper's `create_tokens` form: `[{type, name, value}]`), record it in `config.json` → `sources.paper.tokens.source` (path from the repo root). ui_kit parts then use `var(--token)` values, and **bind-tokens** binds the library frames.
 - Check it imports: `cd design/user-flow/specs && python3 -c "import _uf, ui_kit"`.
 
 ## 4. Write the project folder

@@ -30,6 +30,7 @@ if __name__ == '__main__':
 - Render it: it lists the frames to make (name, 390 × 844, HTML file). Nothing goes into the registry yet.
 - For each: `create_artboard(pageId = promote page, name, width, height)`, then `write_html(insert-children)` with the file. Put them anywhere free for now; the master layout places them.
 - Record them: `_uf.py promoted promoted_j<n> <node id of each frame, in order>`. The gap becomes `promoted`, with its `screen_ids`, `screen_nodes` and `node` (the first frame).
+- **Tokens:** if the project has a token file, read the new frames (`get_tree_summary` + `get_jsx`, then `_uf.py bind-from-transcript`) and run `_uf.py bind-plan promoted_j<n> <node id…>`. It should find nothing to bind; bind whatever it finds (**bind-tokens**) before reporting.
 - Record the spec in `config.json` → `maps.promoted`: `{"journey": <n>, "spec": "specs/promoted_j<n>.py", "page": "<page id>"}`.
 
 ## 3. Update the maps

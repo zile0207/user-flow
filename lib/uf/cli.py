@@ -28,6 +28,11 @@ frames-from-transcript <jsonl>          store every get_jsx result found in a Cl
 frames-local <board>                    the copies to make on the Frames page for a board (each screen typed once)
 frames-local-commit <tree or id lines>  record the Frames page copies (names start "copy:"), so boards clone them
 tree <saved tool result> <out file>     turn a get_tree_summary result (even the harness's saved JSON) into "<id> <name>" lines
+bind-from-transcript <jsonl>            store every get_tree_summary and get_jsx result on the library file from a session
+bind-read <frame> <tree file> <jsx file> store one frame's two reads (the harness's saved results work as they are)
+bind-plan <batch> <frame…> | --board <b> the update_styles payloads that bind these frames to the design tokens
+          [--file <file id>]            (out/bind/<batch>/NN.json), what stays literal, and which frames are fully bound
+bind-status [<board>]                   how many library frames are bound to tokens; with a board, which of its aren't
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
 """
@@ -552,8 +557,8 @@ def frames_local(P, board_name):
         f = os.path.join(out, f'{j:02d}.html'); open(f, 'w').write(html)
         rows.append((name, h, left, top, f))
     print(f"{board_name}: {len(rows)} copies to make on the Frames page ({page}). Each is a real copy of a Master frame, typed once;")
-    print("boards then show them as same-file live copies. Split the list across up to 5 paste subagents at once (model sonnet: copies are")
-    print("10-25 KB and must be pasted whole; smaller models cut them short):")
+    print("boards then show them as same-file live copies. Ask the user whether to use subagents: if yes, split the list across at most 3")
+    print("paste subagents at once (model sonnet: copies are 10-25 KB and must be pasted whole; smaller models cut them short); if no, one at a time:")
     print(f"for each line: create_artboard(fileId, pageId \"{page}\", name, width 390px, height, backgroundColor #FFFFFF), then write_html(insert-children, that artboard, the file, byte for byte).")
     for r in rows:
         print(f"  {r[0]} | 390 x {r[1]} | left {r[2]} top {r[3]} | {r[4]}")
@@ -586,6 +591,159 @@ def frames_local_commit(P, path):
     with open(_local_path(P), 'w') as f:
         json.dump(local, f, indent=1, ensure_ascii=False); f.write('\n')
     print(f'frames_local.json: {n} copies recorded ({len(local)} in all). Render the board again: its cards are now live copies.')
+
+
+# ---------- design tokens: bind library frames (tokens.py) ----------
+
+def _bind_dir(P, *parts):
+    d = os.path.join(P.root, 'out', 'bind', *parts)
+    os.makedirs(d if not os.path.splitext(d)[1] else os.path.dirname(d), exist_ok=True)
+    return d
+
+
+def _tokens_path(P):
+    src = P.cfg.get('sources', {}).get('paper', {}).get('tokens', {}).get('source')
+    if not src:
+        return None
+    for base_ in (os.path.dirname(os.path.dirname(P.root)), P.root):
+        if os.path.exists(os.path.join(base_, src)):
+            return os.path.join(base_, src)
+    return None
+
+
+def _bound_path(P):
+    return os.path.join(P.root, 'bound.json')
+
+
+def _board_frames(P, name):
+    d = os.path.join(P.root, 'out', name)
+    out = []
+    if os.path.exists(os.path.join(d, 'frames_needed.txt')):
+        out += [l.strip() for l in open(os.path.join(d, 'frames_needed.txt')) if l.strip()]
+    if os.path.exists(os.path.join(d, 'local_needed.json')):
+        out += [n for pair in json.load(open(os.path.join(d, 'local_needed.json'))).values() for n in pair if n]
+    if os.path.exists(os.path.join(d, 'clones.json')):
+        out += [n for ns in json.load(open(os.path.join(d, 'clones.json'))).values() for n in ns]
+    from . import base as B
+    lib = set(B.FRAME_NAMES) or None
+    seen = []
+    for n in out:
+        n = board_nid(n)
+        if n not in seen and (lib is None or n in lib):
+            seen.append(n)
+    return seen
+
+
+def bind_read(P, frame, tree_path, jsx_path):
+    from .tokens import frame_nodes, result_text
+    frame = board_nid(frame)
+    tr, jx = result_text(open(tree_path).read()), result_text(open(jsx_path).read())
+    nodes, bad = frame_nodes(tr, jx)
+    open(os.path.join(_bind_dir(P, 'read'), f'{frame}.tree'), 'w').write(tr)
+    open(os.path.join(_bind_dir(P, 'read'), f'{frame}.jsx'), 'w').write(jx)
+    print(f'{frame}: {len(nodes)} layers paired' + (f' · {len(bad)} parts did not line up: {bad[:3]}' if bad else ''))
+
+
+def bind_from_transcript(P, path):
+    """Every get_tree_summary / get_jsx result on the library file in a session, newest last, into out/bind/read/."""
+    uses, n = {}, 0
+    rd = _bind_dir(P, 'read')
+    for line in open(path, errors='ignore'):
+        if 'get_tree_summary' not in line and 'get_jsx' not in line and 'tool_result' not in line:
+            continue
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        c = d.get('message', {}).get('content')
+        if not isinstance(c, list):
+            continue
+        for x in c:
+            name = str(x.get('name', ''))
+            if x.get('type') == 'tool_use' and (name.endswith('get_tree_summary') or name.endswith('get_jsx')):
+                inp = x.get('input', {})
+                if inp.get('fileId') in (None, P.library_file_id) and inp.get('nodeId') and inp.get('format', 'inline-styles') == 'inline-styles':
+                    uses[x['id']] = (board_nid(inp['nodeId']), 'tree' if name.endswith('get_tree_summary') else 'jsx')
+            elif x.get('type') == 'tool_result' and x.get('tool_use_id') in uses:
+                cont = x.get('content')
+                t_ = ''.join(y.get('text', '') for y in cont if isinstance(y, dict)) if isinstance(cont, list) else str(cont)
+                m = re.search(r'saved to:? (/\S+?\.(?:txt|json))', t_)
+                if m and os.path.exists(m.group(1)):
+                    from .tokens import result_text
+                    t_ = result_text(open(m.group(1)).read())
+                node, kind = uses[x['tool_use_id']]
+                if (kind == 'tree' and '"summary"' in t_) or (kind == 'jsx' and '(' in t_ and '<' in t_):
+                    open(os.path.join(rd, f'{node}.{kind}'), 'w').write(t_)
+                    if kind == 'jsx':                     # the newest read is also the frame cache copies are made from
+                        open(os.path.join(_frames_dir(P), f'{node}.jsx'), 'w').write(t_[t_.find('}(') + 1:] if '}(' in t_ else t_[t_.find('('):])
+                    n += 1
+    print(f'{n} reads stored in {os.path.relpath(rd, P.root)}/ (get_jsx results also refresh the frame cache)')
+
+
+def bind_plan(P, args):
+    from .tokens import Tokens, plan
+    fid = _opt(args, '--file', P.library_file_id)
+    board_name = _opt(args, '--board')
+    batch = args.pop(0) if args else board_name
+    frames = [board_nid(a) for a in args] or (_board_frames(P, board_name) if board_name else [])
+    tp = _tokens_path(P)
+    if not tp:
+        print('No token file: set config.json → sources.paper.tokens.source (e.g. "design/tokens.json").'); sys.exit(2)
+    if not frames:
+        print('No frames: name them, or --board <board> (render the board first).'); sys.exit(2)
+    rd = _bind_dir(P, 'read')
+    have = {f: (open(os.path.join(rd, f'{f}.tree')).read(), open(os.path.join(rd, f'{f}.jsx')).read())
+            for f in frames if os.path.exists(os.path.join(rd, f'{f}.tree')) and os.path.exists(os.path.join(rd, f'{f}.jsx'))}
+    missing = [f for f in frames if f not in have]
+    if missing:
+        print(f'{len(missing)} of {len(frames)} frames not read yet. For each, one call at a time: '
+              f'get_tree_summary(fileId "{fid}", nodeId, depth 30) and get_jsx(fileId "{fid}", nodeId, format "inline-styles"); '
+              'then `_uf.py bind-from-transcript <session .jsonl>` (or bind-read). Frames: ' + ' '.join(missing))
+        if not have:
+            sys.exit(2)
+    T = Tokens(tp)
+    out = _bind_dir(P, batch)
+    for f in os.listdir(out):
+        if f.endswith('.json'):
+            os.remove(os.path.join(out, f))
+    per, bound = {}, json.load(open(_bound_path(P))) if os.path.exists(_bound_path(P)) else {}
+    for f, pair in have.items():
+        c, r = plan(T, {f: pair})
+        per[f] = (sum(len(e['nodeIds']) for ch in c for e in ch), r)
+    chunks, rep = plan(T, have)
+    for i, ch in enumerate(chunks):
+        json.dump(ch, open(os.path.join(out, f'{i:02d}.json'), 'w'))
+    k = rep['counts']
+    print(f"{batch}: {k['frames']} frames · {k['nodes']} layers to bind ({k['values']} values) · {k['bound_already']} values already bound")
+    for f, (n, r) in per.items():
+        if r['bad']:
+            print(f'  {f}: parts did not line up, skipped: {r["bad"][:3]} (read it again; if it persists, bind those parts by hand)')
+        elif n == 0:
+            bound[f] = {'left': sum(len(v) for v in r['left'].values())}
+    json.dump(bound, open(_bound_path(P), 'w'), indent=1, sort_keys=True)
+    done = [f for f in have if f in bound and per[f][0] == 0 and not per[f][1]['bad']]
+    if done:
+        print(f'  fully bound: {len(done)} of {len(have)} ({" ".join(done[:12])}{" …" if len(done) > 12 else ""}), recorded in bound.json')
+    if rep['left']:
+        print('No token for these (add a token or a snap to the token file, or a keep entry, then plan again):')
+        for (kind, v), ids in sorted(rep['left'].items(), key=lambda x: -len(x[1])):
+            print(f'  {kind:<13} {v:<28} {len(ids):>4} layers  e.g. {" ".join(ids[:3])}')
+    if chunks:
+        print(f'{len(chunks)} update_styles calls, one at a time, each with fileId "{fid}" and updates = the file\'s JSON as it is:')
+        for i, ch in enumerate(chunks):
+            print(f'  {os.path.relpath(os.path.join(out, f"{i:02d}.json"), P.root)}  ({len(json.dumps(ch)) // 1000} KB, {sum(len(e["nodeIds"]) for e in ch)} layers)')
+        print('Then read each frame again with get_jsx only (the tree does not change), run bind-from-transcript, and plan again: 0 to bind means done.')
+
+
+def bind_status(P, args):
+    bound = json.load(open(_bound_path(P))) if os.path.exists(_bound_path(P)) else {}
+    from . import base as B
+    lib = list(B.FRAME_NAMES)
+    print(f'Tokens: {len([n for n in lib if n in bound]) if lib else len(bound)} of {len(lib) or "?"} library frames bound')
+    if args:
+        fr = _board_frames(P, args[0])
+        todo = [f for f in fr if f not in bound]
+        print(f'{args[0]}: {len(fr) - len(todo)} of {len(fr)} frames bound' + (f' · to bind: {" ".join(todo)}' if todo else ''))
 
 
 def _val(v):
@@ -656,6 +814,14 @@ def main(P, argv):
         frames_local_commit(P, args[0])
     elif cmd == 'frames-from-transcript':
         frames_from_transcript(P, args[0])
+    elif cmd == 'bind-read':
+        bind_read(P, args[0], args[1], args[2])
+    elif cmd == 'bind-from-transcript':
+        bind_from_transcript(P, args[0])
+    elif cmd == 'bind-plan':
+        bind_plan(P, args)
+    elif cmd == 'bind-status':
+        bind_status(P, args)
     elif cmd == 'brief':
         brief(P)
     elif cmd == 'coverage':

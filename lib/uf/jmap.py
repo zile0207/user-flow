@@ -340,7 +340,8 @@ def header(width, title, right, story, stats, rows, journey_no=None, dividers=()
     cfg = cfg or {}
     persona = cfg.get('persona', {}).get('name', 'The persona')
     app = cfg.get('project', 'The app')
-    screens_name = cfg.get('sources', {}).get('paper', {}).get('screens_page_name', 'the screens page')
+    paper = cfg.get('sources', {}).get('paper', {})
+    screens_name = paper.get('library_page_name') or paper.get('screens_page_name', 'the screens page')
     device = cfg.get('device_label', 'Mobile · iPhone')
     bar = (f'<div layer-name="Header bar" style="position:absolute;left:40px;top:40px;width:{width-80}px;height:56px;background:{INK};border-radius:14px;display:flex;align-items:center;padding:0 20px;gap:16px;box-sizing:border-box">'
            + t(device, 13, 18, 500, '#9AA4A6') + '<div style="width:1px;height:20px;background:#3A4245"></div>'

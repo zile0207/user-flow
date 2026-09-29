@@ -33,6 +33,7 @@ bind-read <frame> <tree file> <jsx file> store one frame's two reads (the harnes
 bind-plan <batch> <frame…> | --board <b> the update_styles payloads that bind these frames to the design tokens
           [--file <file id>]            (out/bind/<batch>/NN.json), what stays literal, and which frames are fully bound
 bind-check <file id> <card node…>        pasted copies on a board: is every value in each copied screen a token?
+bind-refused [<prop> <node…>]           Paper kept the literal after a write: record it (no args: list them)
 bind-status [<board>]                   how many library frames are bound to tokens; with a board, which of its aren't
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
@@ -713,10 +714,11 @@ def bind_plan(P, args):
         if f.endswith('.json'):
             os.remove(os.path.join(out, f))
     per, bound = {}, json.load(open(_bound_path(P))) if os.path.exists(_bound_path(P)) else {}
+    refused = bound.get('_refused', {})
     for f, pair in have.items():
-        c, r = plan(T, {f: pair})
+        c, r = plan(T, {f: pair}, refused=refused)
         per[f] = (sum(len(e['nodeIds']) for ch in c for e in ch), r)
-    chunks, rep = plan(T, have)
+    chunks, rep = plan(T, have, refused=refused)
     for i, ch in enumerate(chunks):
         json.dump(ch, open(os.path.join(out, f'{i:02d}.json'), 'w'))
     k = rep['counts']
@@ -762,10 +764,28 @@ def bind_check(P, args):
     print('all copies tagged' if not bad else f'{bad} of {len(args)} copies need attention')
 
 
+def bind_refused(P, args):
+    """bind-refused <prop> <node…>: Paper took the write but kept the literal. Record it so plans skip it."""
+    bound = json.load(open(_bound_path(P))) if os.path.exists(_bound_path(P)) else {}
+    r = bound.setdefault('_refused', {})
+    if not args:
+        for n, props in sorted(r.items()):
+            print(n, ' '.join(props))
+        return
+    prop = args.pop(0)
+    for n in [board_nid(a) for a in args]:
+        if prop not in r.setdefault(n, []):
+            r[n].append(prop)
+    json.dump(bound, open(_bound_path(P), 'w'), indent=1, sort_keys=True)
+    print(f'{len(args)} layers: {prop} recorded as refused by Paper')
+
+
 def bind_status(P, args):
     bound = json.load(open(_bound_path(P))) if os.path.exists(_bound_path(P)) else {}
     from . import base as B
     lib = list(B.FRAME_NAMES)
+    if bound.get('_refused'):
+        print(f"Paper refused a token on {len(bound['_refused'])} layers (kept literal, same value): `_uf.py bind-refused` lists them")
     print(f'Tokens: {len([n for n in lib if n in bound]) if lib else len(bound)} of {len(lib) or "?"} library frames bound')
     if args:
         fr = _board_frames(P, args[0])
@@ -847,6 +867,8 @@ def main(P, argv):
         bind_from_transcript(P, args[0])
     elif cmd == 'bind-plan':
         bind_plan(P, args)
+    elif cmd == 'bind-refused':
+        bind_refused(P, args)
     elif cmd == 'bind-check':
         bind_check(P, args)
     elif cmd == 'bind-status':

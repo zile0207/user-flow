@@ -278,8 +278,10 @@ def frame_nodes(tree_raw, jsx_raw):
     return out, bad
 
 
-def plan(tokens, frames, limit=20000):
-    """frames: {frame id: (tree text, jsx text)} → (payload chunks, report)."""
+def plan(tokens, frames, limit=20000, refused=None):
+    """frames: {frame id: (tree text, jsx text)} → (payload chunks, report).
+    refused: {node id: [prop]} Paper would not take a token for (the write succeeds, the value stays literal)."""
+    refused = refused or {}
     groups, left, bad, counts = {}, {}, {}, {'frames': 0, 'nodes': 0, 'values': 0, 'bound_already': 0}
     for fid, (tr, jx) in frames.items():
         nodes, b = frame_nodes(tr, jx)
@@ -289,6 +291,8 @@ def plan(tokens, frames, limit=20000):
         for nid, style, size in nodes:
             counts['bound_already'] += sum(1 for p, v in style.items() if p in KIND and str(v).startswith(BOUND))
             upd, lf = tokens.bind(style, size)
+            for p in refused.get(nid, ()):
+                upd.pop(p, None)
             for k in lf:
                 left.setdefault(k, []).append(nid)
             if upd:

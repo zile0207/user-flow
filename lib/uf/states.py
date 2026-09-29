@@ -67,7 +67,7 @@ class StateMap:
         max_var = max(len(r['variants']) for r in rows)
         W = 2 * LEFT + 48 + PRI_W + 28 + NAME_W + 28 + max_var * CARD_W + (max_var - 1) * VAR_GAP + 28 + TEXT_W
         y = 300
-        B = board.Board(self.P, name)
+        B = board.Board(self.P, name, scale=base.PW / THUMB_W)     # screens at their real size
         B.add('header', f'<div layer-name="Header bar" style="position:absolute;left:40px;top:40px;width:{W-80}px;height:56px;background:{INK};border-radius:14px;display:flex;align-items:center;padding:0 20px;gap:16px;box-sizing:border-box">'
               + t('State map', 13, 18, 500, '#9AA4A6') + '<div style="width:1px;height:20px;background:#3A4245"></div>' + t(title, 17, 22, 700, '#FFFFFF')
               + '<div style="flex:1"></div>' + t(right, 13, 18, 500, '#9AA4A6') + f'<div style="width:10px;height:10px;border-radius:5px;background:{base.ACCENT}"></div></div>')

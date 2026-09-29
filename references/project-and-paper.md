@@ -94,7 +94,8 @@ The same screen shown twice in a story counts once on the master map. It's a dup
 - The rules in `config.json` → `rules` apply to everything an agent writes: map notes, gap needs, and the copy in explorations.
 
 ## Screens on boards: real frames, never images
-Every screen on a map, the master map, a state map or an exploration's "where it sits" strip is a **live copy of the real Paper frame**, made by the renderer as `<x-paper-clone node-id="…" style="zoom:…">` inside a clipped box (`uf.base.screen`). The frame inside keeps its real size, layers and values, so anyone can inspect it; `zoom` only scales how it shows.
+Every screen on a map, the master map or a state map is a **live copy of the real Paper frame at its real size** (390×844 on iPhone), made by the renderer as `<x-paper-clone node-id="…">` (`uf.base.screen`). No zoom, no shrinking: the copy's layers are exactly as big as they look, so selecting it on the canvas selects what you see.
+- To make room, boards are drawn larger than their specs: specs stay in map units (a card is 200 wide), and `Board(scale=…)` scales every position, size, font and arrow so a card's screen box comes out at the device width. A journey map is drawn about 2.2× its spec; the master and state maps about 3.1×.
 - Specs name frames by **node id** (`node='PY1-0'`), never by image. Don't export PNGs of screens, and don't put `<img>` screenshots of the app on any board. The only images allowed are an exploration's references from other apps.
 - Take the node from the **library page** where the screen exists there. Use another page's frame only when the library doesn't have it, and say so in the card's note.
 - A copy doesn't follow later edits to its source. When a library screen changes, run `_uf.py stale <board> <node id>` (or `all`) and sync: those copies are replaced with fresh ones.

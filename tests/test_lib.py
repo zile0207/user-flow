@@ -74,7 +74,7 @@ def test_legacy_state_upgrades_with_renames():
     captured, maps = {}, []
     orig_add, orig_emit = board.Board.add, board.Board.emit
     def cap(self, key, html):
-        k = orig_add(self, key, html); captured[k] = html; return k
+        k = orig_add(self, key, html); captured[k] = self.body[k]; return k      # as drawn (scaled)
     board.Board.add = cap
     board.Board.emit = lambda self, W, H, page='maps': None
     sys.path.insert(0, specs); argv = sys.argv; sys.argv = ['journey.py']
@@ -196,7 +196,7 @@ def test_ops_prints_ready_calls():
     assert 'ops have no node id' in run(root, '_uf.py', 'ops', 'journey', ok=False)
     run(root, 'journey.py', '--drift', tree)
     out = run(root, '_uf.py', 'ops', 'journey', '--discard')
-    assert '"99Z-0"' in out and 'write_html(mode="replace")' in out and '"left": "1200px"' in out and 'update_styles' in out, out
+    assert '"99Z-0"' in out and 'write_html(mode="replace")' in out and '"left": "2600px"' in out and 'update_styles' in out, out
 
 
 def test_bus_ends_are_keyed_by_their_node():
@@ -222,7 +222,8 @@ def test_boards_never_show_images():
             imgs = [i for i in imgs if '/refs/' not in i]
         assert not imgs, (board_dir, imgs[:2])
     html = ''.join(open(f).read() for f in glob.glob(os.path.join(root, 'out', 'journey', 'full', '*.html')))
-    assert 'x-paper-clone node-id="S1-0"' in html and 'zoom:0.4615' in html
+    assert 'x-paper-clone node-id="S1-0"' in html and 'zoom' not in html          # real size, 1:1
+    assert re.search(r'layer-name="Screen" style="position:relative;width:390px;height:844px', html), 'screen box must be the device size'
 
 
 def test_chunks_hold_few_copies():

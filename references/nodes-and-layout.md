@@ -2,7 +2,7 @@
 
 Every map is rendered by `lib/uf` from a spec in the project's `design/user-flow/specs/`. Don't hand-draw a map on the canvas. Write or edit the spec, render it, paste the chunks.
 
-**Screens are real frames, never images.** Every screen on every board is a live copy of its Paper frame (`project-and-paper.md` → Screens on boards). Specs name screens by node id.
+**Screens are real frames at real size, never images.** Every screen on every board is a live copy of its Paper frame, 1:1 (`project-and-paper.md` → Screens on boards). Specs name screens by node id and stay in map units (a card is 200 × 520); the board is drawn about 2.2× larger so each card's screen is the device size. Every number in this file is in map units.
 
 ## Levels
 

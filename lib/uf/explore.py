@@ -75,8 +75,9 @@ def where_box(kind, top, main, sub=''):
     if kind == 'outside':
         return (f'<div style="width:160px;height:76px;border:1.5px dashed {INK};border-radius:6px;display:flex;flex-direction:column;justify-content:center;padding:0 12px;box-sizing:border-box;gap:2px">'
                 + t(top, 10, 12, 700, MUTED, 'letter-spacing:0.08em;') + t(main, 13, 17, 700, INK) + '</div>')
-    # kind == 'screen': top = the Paper node id of the neighbouring screen (a live copy, never an image)
-    return (f'<div style="display:flex;align-items:center;gap:10px">' + base.screen(top, 60, 6)
+    # kind == 'screen': top = the Paper node id of the neighbouring screen. Named, not drawn: a real frame is
+    # 390 wide and doesn't fit the brief; the maps show it at full size.
+    return (f'<div style="display:flex;align-items:center;gap:10px"><div style="width:40px;height:76px;border:1.5px solid {LINE};border-radius:6px;background:#FFFFFF;flex-shrink:0"></div>'
             + '<div style="display:flex;flex-direction:column;gap:2px;width:110px">' + t(main, 13, 17, 700, INK) + t(sub, 12, 16, 500, MUTED) + '</div></div>')
 
 

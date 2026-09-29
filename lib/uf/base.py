@@ -22,15 +22,15 @@ def nid(node):
 
 
 def screen(node, w, radius=10, layer='Screen'):
-    """A real screen on a board: a live copy of the Paper frame `node`, shown at width w.
-    Never an image. `zoom` scales the copy for display only: the frame inside keeps its real size and values,
-    so anyone can inspect it. The box clips frames taller than the device."""
+    """A real screen on a board: a live copy of the Paper frame `node`, in a box w wide (in the board's spec units).
+    Never an image. Boards are scaled (Board(scale=…)) so this box comes out at the device width: the zoom then
+    cancels out and is dropped, and the frame sits at its real size, 1:1. The box clips frames taller than the device."""
     assert node, 'a screen needs the Paper node id of a real frame (boards never show images)'
-    z = round(w / PW, 4)
-    h = round(PH * z)
-    return (f'<div layer-name="{layer}" style="position:relative;width:{w}px;height:{h}px;flex-shrink:0;overflow:hidden;'
-            f'border-radius:{radius}px;border:1px solid {LINE};box-sizing:border-box;background:#FFFFFF">'
-            f'<x-paper-clone node-id="{nid(node)}" style="position:absolute;left:0px;top:0px;zoom:{z}" /></div>')
+    z = w / PW
+    h = w * PH / PW
+    return (f'<div layer-name="{layer}" style="position:relative;width:{w}px;height:{h:.4f}px;flex-shrink:0;overflow:hidden;'
+            f'border-radius:{radius}px;background:#FFFFFF">'
+            f'<x-paper-clone node-id="{nid(node)}" style="position:absolute;left:0px;top:0px;zoom:{z:.6f}" /></div>')
 
 
 def t(txt, size, lh, w, col, extra=''):

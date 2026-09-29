@@ -120,7 +120,7 @@ class MasterMap:
                + t('Master map', 13, 18, 500, '#9AA4A6') + '<div style="width:1px;height:20px;background:#3A4245"></div>' + t(title, 17, 22, 700, '#FFFFFF')
                + '<div style="flex:1"></div>' + t(right, 13, 18, 500, '#9AA4A6') + f'<div style="width:10px;height:10px;border-radius:5px;background:{base.ACCENT}"></div></div>')
         stats = [(str(designed), 'designed screens', INK), (str(todo), 'to design', AMBER)] + ([(str(later), 'after MVP', '#6B7678')] if later else []) + [(str(len(self.areas)), 'areas', INK)]
-        B = board.Board(self.P, name)
+        B = board.Board(self.P, name, scale=base.PW / THUMB_W)     # screens at their real size
         B.add('header', bar)
         B.add('story', f'<div layer-name="Story line" style="position:absolute;left:40px;top:116px;width:2600px">' + t(story, 17, 24, 500, MUTED) + '</div>')
         B.add('coverage', f'<div layer-name="Coverage" style="position:absolute;left:{W-700}px;top:160px;width:660px;display:flex;justify-content:flex-end;gap:36px">'

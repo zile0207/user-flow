@@ -11,6 +11,8 @@ ATTACH = 205                      # a card's arrows attach 205px below its top (
 FIRST_TOP = 380                   # row 1 card top
 ROW_PITCH = 700                   # card top to next row's card top
 WIDTH = {'card': CW, 'gap': CW, 'dia': DW}
+MAP_SCALE = base.PW / 180          # specs are in map units; the board is drawn this much larger, so a card's
+                                   # 180-wide screen box is the device width and the frame inside is real size
 
 
 def row_y(n):
@@ -312,7 +314,7 @@ class Map:
         stats = [(str(designed), 'designed screens', INK), (str(todo), 'to design', AMBER)]
         if later: stats.append((str(later), 'after MVP', '#6B7678'))
         stats.append((str(dias), 'decisions', INK))
-        B = board.Board(P, name)
+        B = board.Board(P, name, scale=MAP_SCALE)
         for k, html in header(W, title, right, story, stats,
                               [(row_label_top(n), f'{n} · {tt}', sub, base.ACCENT if jm else INK) for n, tt, sub, jm in rows],
                               self.J, dividers, P.cfg, kind):

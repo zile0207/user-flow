@@ -38,6 +38,27 @@ def _num(s):
     return int(f) if f == int(f) else f
 
 
+def _num_fmt(v):
+    v = round(v, 2)
+    return str(int(v)) if v == int(v) else f'{v:g}'
+
+
+def scale_html(html, s):
+    """Draw an element s times larger: every px value, every svg's width and height (its viewBox stays, so its
+    drawing scales too) and every zoom. A zoom that comes out at 1 is dropped: the frame shows at its real size."""
+    if s == 1:
+        return html
+    out = re.sub(r'(-?\d+(?:\.\d+)?)px', lambda m: _num_fmt(float(m.group(1)) * s) + 'px', html)
+    def svg_tag(m):
+        return re.sub(r'\s(width|height)="([\d.]+)"', lambda a: f' {a.group(1)}="{_num_fmt(float(a.group(2)) * s)}"', m.group(0))
+    out = re.sub(r'<svg\b[^>]*>', svg_tag, out)
+
+    def z(m):
+        v = float(m.group(1)) * s
+        return '' if abs(v - 1) < 0.01 else f';zoom:{_num_fmt(v)}'
+    return re.sub(r';zoom:([\d.]+)', z, out)
+
+
 def position(html):
     """(left, top) of the element's root tag, or None when it isn't absolutely placed."""
     head = html[:html.index('>')]
@@ -51,9 +72,11 @@ def _unplaced(html):
 
 
 class Board:
-    def __init__(self, project, name):
+    def __init__(self, project, name, scale=1):
+        """scale: draw the whole board this much larger than its spec (a map is scaled so its screens are real size)."""
         self.P = project
         self.name = name
+        self.scale = scale
         self.keys = []
         self.html = {}       # stamped, as painted
         self.body = {}       # unstamped, for hashing
@@ -70,6 +93,7 @@ class Board:
             key = f'{key}.{n}'
         head = html[:html.index('>')]
         assert 'layer-name="' in head, f'element {key} has no layer-name on its root tag'
+        html = scale_html(html, self.scale)
         self.body[key] = html
         self.html[key] = self._stamp(html, key)
         self.keys.append(key)
@@ -114,6 +138,7 @@ class Board:
         return {k: re.findall(r'<x-paper-clone node-id="([^"]+)"', self.html[k]) for k in self.keys if '<x-paper-clone' in self.html[k]}
 
     def emit(self, W, H, page='maps'):
+        W, H = round(W * self.scale), round(H * self.scale)
         full = self._dir('full'); sync = self._dir('sync')
         for d in (full, sync):
             for f in os.listdir(d):

@@ -15,6 +15,7 @@ Creates `design/user-flow/` in the current repo, so every other user-flow skill 
 - **Where boards go:** a page for maps (offer "User Journey"), and a page for explorations (offer "Exploration"). Both are in the same file as the confirmed screens. If they don't exist yet, offer to create them (`create_page`).
 - **The library:** the page that holds every confirmed screen of the app, however messy (`library_page`). Journeys place these screens in context, and nothing becomes a needs-design gap while the library has it. Confirmed explorations are promoted there too (`promote_page`), unless the user names another page.
 - **Legacy files:** any older file to mark as legacy (`legacy_file_ids`), so no skill writes to it.
+- **A readme per file:** offer an `agents.md` page in each Paper file with one readme frame: what the file and its pages are for, how the project's files connect, the rules for agents, and the product. Record each in `config.json` → `sources.paper.files` (`file_id`, `name`, `readme`: page and frame, `pages`). Every skill reads them once per session.
 - **The rules:** the app's copy rules (vocabulary, banned words, what never to guess) and product rules (what may be asked, when). Read them from AGENTS.md, CLAUDE.md, a spec or a story page if they exist. Draft them, and confirm with the user.
 - **The persona:** a name and a line about them. Offer to draft it from a story or spec page if one exists.
 - **The router,** if there's a codebase: Expo Router, Next.js app router, React Navigation, or other. Detect it first, then confirm.

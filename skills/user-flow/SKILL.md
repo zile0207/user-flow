@@ -11,6 +11,7 @@ You are the router for the user-flow plugin. The user types `/user-flow`, usuall
 ## Setup check (always first)
 1. **Plugin root:** resolve this skill's real directory (follow symlinks), then go two levels up. Its `references/` and `lib/` are the shared rules and code.
 2. **Project:** look for `design/user-flow/config.json` in the current repo.
+   - **Readmes first:** if `config.json` → `sources.paper.files` lists files with a `readme` frame, read each one once per session (`get_tree_summary` or `get_jsx` on the frame, with the file id) before any other Paper work. They say what each file and page is for, how the files connect, and the rules.
    - If it's missing and the request is anything but init, say so and run **init** first.
 3. If the project exists, run `python3 design/user-flow/specs/_uf.py status` and print its output as it is. Don't work the numbers out yourself: the script renders every spec, so the counts, the out-of-date boards and "Next up" are the same whichever agent runs it. It looks like:
 

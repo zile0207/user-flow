@@ -52,6 +52,7 @@
            "promoted": [{"journey": 2, "spec": "specs/promoted_j2.py", "artboard": "...", "page": "p-2-0"}]}
 }
 ```
+- `files` (optional): a project spread over several Paper files, each `{file_id, name, readme: {page, frame}, pages}`. Read every readme frame once per session, before other Paper work. When a file is added, add it to every file's readme and here.
 - `legacy_file_ids`: files no skill may write to. Check every Paper write's file id against this list.
 - `library_page`: the page that holds every confirmed screen of the app, however messy (see The library). `screens_page` is the curated story, if there is one.
 - `master_page` (optional): a page of its own for the master map; otherwise it goes first on the maps page.

@@ -1,6 +1,6 @@
 ---
 name: user-flow
-description: The index for the user-flow plugin. Describe what you want in plain words (map the whole app, a journey, one job or one surface's states; audit a map; explore, promote or sync a design; answer open questions) and it routes to the right skill.
+description: The index for the user-flow plugin. Describe what you want in plain words (ask about the project; map the whole app, a journey, one job or one surface's states; audit a map; explore, promote or sync a design; answer open questions) and it routes to the right skill.
 disable-model-invocation: true
 ---
 
@@ -34,6 +34,7 @@ Every board shows screens as live copies of the real Paper frames (library first
 
 | Skill | Use when the user wants to… | Example prompts |
 |---|---|---|
+| **ask-project** | ask about the project, without changing anything | "where are we?", "which flows are missing?", "what should we look out for?", "edge cases in journey 2?", "where's the paste screen?" |
 | **init** | set up a project: sources (Paper, Figma, codebase), persona, theme, UI kit | "set this up", "start user-flow for this app", "connect my Paper file" |
 | **map-master** | see every screen in the app, grouped by area: the inventory | "map everything", "all the screens", "what screens do we have" |
 | **map-journey** | map one area end to end, with every branch (a segment of the master), or update and re-lay out one | "map onboarding", "journey for collecting", "journey 3: the week in the top", "redo journey 1, the arrows cross" |
@@ -47,16 +48,17 @@ Every board shows screens as live copies of the real Paper frames (library first
 
 ## Routing rules
 Check these in order. The first that matches wins.
-0. **Several steps in one prompt** ("map everything then explore the first gap"): split it into steps, route each step with the rules below, and run them in order. After each map step, run its audit. "The first gap" means the status line's Next up; otherwise ask which gap.
-1. **Set up:** "set up", "init", "connect my Paper/Figma file", another app or repo → **init** (in that repo).
-2. **Hand-off:** "promote", "hand off", "publish", "to the devs", "developers can build" → **promote-design**, even when the prompt names a gap id.
-3. **Answers and decisions:** a Q id with an answer ("Q1·3: code"), "decide", "undecided", "open questions" → **answer-questions**.
-4. **Sync:** "sync", "refresh", "update the board", "out of date", "repaint" → **sync-board**. If no board is named, sync every board the status lists as out of date; if none are, say so.
-5. **States of one surface:** "what shows when", "which wins", "states of the …" → **map-states**.
-6. **Audit:** "audit", "missing", "edge cases", "what did we miss" → **audit-flow**.
-7. **Add one screen or state to a map:** "add a screen for …", "we need a state for …" → **audit-flow** with that one finding: check the map first (it may already be drawn, or already be a gap), then add it as a gap.
-8. **Design work:** a gap id (`N2·3`), or "explore", "design the …", "iterate on", "more variants", "mix", "confirm X" → **explore-design**. A gap named by title ("the email sign-in") is fine: explore-design matches it.
-9. **Maps:**
+0. **A question about the project** (where things stand, what's missing, what to look out for, edge cases, where something is), with no request to change anything → **ask-project**. If the answer leads to work, ask-project names the skill; the user decides.
+1. **Several steps in one prompt** ("map everything then explore the first gap"): split it into steps, route each step with the rules below, and run them in order. After each map step, run its audit. "The first gap" means the status line's Next up; otherwise ask which gap.
+2. **Set up:** "set up", "init", "connect my Paper/Figma file", another app or repo → **init** (in that repo).
+3. **Hand-off:** "promote", "hand off", "publish", "to the devs", "developers can build" → **promote-design**, even when the prompt names a gap id.
+4. **Answers and decisions:** a Q id with an answer ("Q1·3: code"), "decide", "undecided", "open questions" → **answer-questions**.
+5. **Sync:** "sync", "refresh", "update the board", "out of date", "repaint" → **sync-board**. If no board is named, sync every board the status lists as out of date; if none are, say so.
+6. **States of one surface:** "what shows when", "which wins", "states of the …" → **map-states**.
+7. **Audit:** "audit", "add the missing screens", "find and add the edge cases" → **audit-flow**. (Only asking what's missing → **ask-project**.)
+8. **Add one screen or state to a map:** "add a screen for …", "we need a state for …" → **audit-flow** with that one finding: check the map first (it may already be drawn, or already be a gap), then add it as a gap.
+9. **Design work:** a gap id (`N2·3`), or "explore", "design the …", "iterate on", "more variants", "mix", "confirm X" → **explore-design**. A gap named by title ("the email sign-in") is fine: explore-design matches it.
+10. **Maps:**
    - "everything", "all screens", "inventory" → **map-master**.
    - "map" + an area or section ("onboarding", "collecting") → **map-journey**. If a journey already covers that area, it updates that journey instead of making a new one.
    - "map" + a goal or job ("to plan a Saturday", "how Jamie plans a Saturday") → **map-flow**.

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Ask Project"
+  short_description: "Answer questions about the project: status, what's missing, what to watch"

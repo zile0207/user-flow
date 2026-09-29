@@ -18,6 +18,7 @@
   ],
   "skills": [
     "./skills/user-flow",
+    "./skills/ask-project",
     "./skills/init",
     "./skills/map-master",
     "./skills/map-journey",

@@ -44,7 +44,7 @@ class LibraryLayout:
         order = {g: i for i, g in enumerate(groups)}
         items = sorted((x for x in self.screens if x['group'] in groups and (not match or match in x['name'])),
                        key=lambda x: (order[x['group']], nat(x)))
-        self.areas.append(dict(name=name, sub=sub, items=items, gaps=list(gaps), entries=entries))
+        self.areas.append(dict(name=name, sub=sub, items=items, gaps=list(gaps), entries=entries, groups=list(groups)))
         return len(items)
 
     # ---------------- generated frames

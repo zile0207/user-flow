@@ -18,6 +18,8 @@ stale <board> <node id…> | all          copies of these frames get re-copied o
 layout-ops <board>                      the Paper calls that lay the library page out as the master map (only what changed)
 layout-commit <board> [<tree or ids>]  record the layout; give the page's tree (or "<id> <name>" lines) so generated frames have ids
 promoted <board> <node id…>             after promote-design's frames are made: record their ids and nodes
+brief                                   a compact digest of the whole project, for answering questions about it
+coverage                                which library screen families each journey shows, and which no journey covers yet
 tree <saved tool result> <out file>     turn a get_tree_summary result (even the harness's saved JSON) into "<id> <name>" lines
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
@@ -310,6 +312,112 @@ def promoted(P, name, nodes):
     print('Next: re-render and sync the maps that show these gaps, and re-run the master layout.')
 
 
+def _board_nodes(P, board_name):
+    import glob
+    html = ''.join(open(f).read() for f in sorted(glob.glob(os.path.join(P.root, 'out', board_name, 'full', '*.html'))))
+    return set(re.findall(r'x-paper-clone node-id="([^"]+)"', html))
+
+
+def _master_areas(P):
+    """group → area name, from specs/master.py (library layout or master map), if it exists."""
+    import runpy
+    path = os.path.join(P.root, 'specs', 'master.py')
+    if not os.path.exists(path):
+        return {}
+    argv = sys.argv
+    sys.argv = ['master.py']
+    sys.path.insert(0, os.path.dirname(path))
+    try:
+        g = runpy.run_path(path, run_name='not_main')
+    finally:
+        sys.argv = argv
+    M = g.get('M')
+    out = {}
+    for a in getattr(M, 'areas', []):
+        for grp in a.get('groups', []):
+            out.setdefault(grp, a['name'])
+        for it in a.get('items', []):
+            grp = it.get('group') if isinstance(it, dict) else None
+            if grp:
+                out.setdefault(grp, a['name'])
+    return out
+
+
+def coverage(P, quiet=False):
+    """Library screen families × journeys: what each journey shows, and what no journey covers yet."""
+    from .library import Library
+    L = Library(P)
+    if not L.data:
+        print('No library.json: run `_uf.py library` first.'); return {}
+    js = P.cfg.get('maps', {}).get('journeys', []) + P.cfg.get('maps', {}).get('flows', [])
+    shown = {}
+    for e in js:
+        name = os.path.basename(e['spec'])[:-3]
+        for n in _board_nodes(P, name):
+            shown.setdefault(n, []).append(f"J{e['no']}" if e in P.cfg['maps'].get('journeys', []) else f"F{e['no']}")
+    areas = _master_areas(P)
+    groups = {}
+    for s_ in L.screens():
+        g = groups.setdefault(s_['group'], {'total': 0, 'shown': 0, 'maps': set()})
+        g['total'] += 1
+        if s_['node'] in shown:
+            g['shown'] += 1
+            g['maps'].update(shown[s_['node']])
+    claimed = {grp for e in js for grp in e.get('library_groups', [])}
+    if not quiet:
+        print('Library families (group · area): screens on a map / screens in the library · maps')
+        for grp, g in sorted(groups.items(), key=lambda kv: (areas.get(kv[0], 'zz'), kv[0])):
+            where = ', '.join(sorted(g['maps'])) or ('claimed, not drawn yet' if grp in claimed else 'NO MAP YET')
+            print(f"  {grp:6} · {areas.get(grp, '?'):34} {g['shown']:3} / {g['total']:3} · {where}")
+        todo = [grp for grp, g in groups.items() if not g['maps']]
+        print(f"\n{len(todo)} of {len(groups)} families appear on no map: {', '.join(sorted(todo))}")
+    return groups
+
+
+def brief(P):
+    cfg = P.cfg
+    paper = cfg.get('sources', {}).get('paper', {})
+    per = cfg.get('persona', {})
+    print(f"# {cfg.get('project')} · user-flow brief")
+    print(f"Persona: {per.get('name')} · {per.get('summary', '')}")
+    print(f"Paper: file {paper.get('file_id')} ({paper.get('file_name', '')}) · library {paper.get('library_page_name')} · maps {paper.get('maps_page_name')} · explorations {paper.get('explore_page_name')}")
+    print('\n## Status'); status(P)
+    maps = cfg.get('maps', {})
+    print('\n## Maps')
+    for e in maps.get('journeys', []):
+        print(f"- J{e['no']} {e['name']} · {e.get('spec')} · artboard {e.get('artboard', 'not painted')} · library groups {', '.join(e.get('library_groups', [])) or '—'}")
+    for e in maps.get('flows', []):
+        print(f"- F{e.get('no')} {e.get('job') or e.get('name')} · {e.get('spec')}")
+    for e in maps.get('states', []):
+        print(f"- States · {e.get('element')} · {e.get('spec')}")
+    for e in maps.get('explorations', []):
+        print(f"- Explore {e['gap']} · {e.get('state')} {e.get('chosen') or ''} · {e.get('spec')}")
+    print('\n## Gaps (to design first: on the persona\'s path, then not blocked)')
+    for g in sorted(P.gaps(), key=lambda g: (g.get('state', 'todo') != 'todo', not g.get('on_path'), _gkey(g))):
+        bl = ', '.join(q['id'] for q in P.blocking(g['id']))
+        extra = ' · on the path' if g.get('on_path') else ''
+        extra += f' · waits on {bl}' if bl else ''
+        extra += f" · {g.get('ref') or ''}{' ' + g['node'] if g.get('node') else ''}" if g.get('state') in ('found', 'explored', 'promoted') else ''
+        print(f"- {g['id']} [{g.get('state', 'todo')}] {g['title']}: {g['need']}{extra}")
+    print('\n## Questions')
+    for q in P.questions():
+        if q['state'] != 'decided':
+            print(f"- {q['id']} [{q['state']}{' · ' + q['owner'] if q.get('owner') else ''}] {q['text']}")
+    dec = [q for q in P.questions() if q['state'] == 'decided']
+    if dec:
+        print('Decided: ' + ' · '.join(f"{q['id']} {q.get('decision', '')}" for q in dec))
+    print('\n## Rules')
+    for k in ('product', 'copy'):
+        for r in cfg.get('rules', {}).get(k, []):
+            print(f'- ({k}) {r}')
+    print('\n## Coverage of the library')
+    groups = coverage(P, quiet=True)
+    if groups:
+        todo = sorted(grp for grp, g in groups.items() if not g['maps'])
+        print(f"{sum(g['shown'] for g in groups.values())} of {sum(g['total'] for g in groups.values())} library screens are on a map. "
+              f"Families on no map yet: {', '.join(todo) or 'none'}. Run `_uf.py coverage` for the table.")
+
+
 def _val(v):
     try:
         return json.loads(v)
@@ -366,6 +474,10 @@ def main(P, argv):
         layout_commit(P, args[0], args[1] if len(args) > 1 else None)
     elif cmd == 'promoted':
         promoted(P, args[0], args[1:])
+    elif cmd == 'brief':
+        brief(P)
+    elif cmd == 'coverage':
+        coverage(P)
     elif cmd == 'tree':
         rows, _ = board.Board.read_tree(args[0])
         open(args[1], 'w').write(''.join(f'{i} {n}\n' for i, n in rows))

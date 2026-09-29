@@ -30,6 +30,7 @@ Needs the Paper MCP. Figma sources need the Figma MCP. Reference search uses the
 | Skill | Invoked by | What it does |
 |---|---|---|
 | [`user-flow`](skills/user-flow/SKILL.md) | you | The index. Describe what you want and it routes to the right skill. |
+| [`ask-project`](skills/ask-project/SKILL.md) | you or the agent | Talk about the project: status, what's missing, what's left to design, open decisions, what to look out for, edge cases. Read-only. |
 | [`init`](skills/init/SKILL.md) | you | Sets up `design/user-flow/` in a project: sources, persona, theme, UI kit. |
 | [`map-master`](skills/map-master/SKILL.md) | you or the agent | Every screen in the app, grouped by area. |
 | [`map-journey`](skills/map-journey/SKILL.md) | you or the agent | One area end to end, every branch and gap. |

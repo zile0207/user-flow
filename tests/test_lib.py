@@ -338,6 +338,24 @@ def test_library_layout_is_incremental():
     assert '2 generated frames to delete · 2 to make' in again and '"M1-0", "M2-0"' in again, again      # its frame and the band's count
 
 
+def test_brief_and_coverage():
+    root = fresh()
+    os.makedirs(os.path.join(root, 'out'), exist_ok=True)
+    tree = os.path.join(root, 'out', 'lib.txt')
+    open(tree, 'w').write('\n'.join([' "" (root_node_p-1-0) ?×?', '  Frame "A·1 · Welcome" (S1-0) 390×844',
+                                       '  Frame "DO4 · Tap Use my location" (PY1-0) 390×844']))
+    run(root, '_uf.py', 'library', tree)
+    run(root, 'journey.py')
+    cfg = json.load(open(os.path.join(root, 'config.json')))
+    cfg['maps']['journeys'] = [{'no': 1, 'name': 'Test', 'spec': 'specs/journey.py'}]
+    json.dump(cfg, open(os.path.join(root, 'config.json'), 'w'))
+    out = run(root, '_uf.py', 'coverage')
+    assert 'NO MAP YET' in out and 'DO' in out, out
+    b = run(root, '_uf.py', 'brief')
+    for part in ('## Status', '## Gaps', '## Questions', '## Coverage of the library', 'N1·1'):
+        assert part in b, part
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

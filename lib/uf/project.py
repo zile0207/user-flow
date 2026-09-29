@@ -47,7 +47,9 @@ class Project:
         base.LOCAL = {k: v['id'] for k, v in json.load(open(lp)).items()} if os.path.exists(lp) else {}
         lib = os.path.join(root, 'library.json')
         if os.path.exists(lib):
-            base.FRAME_NAMES = {s['node']: s['name'] for s in json.load(open(lib)).get('screens', [])}
+            screens = json.load(open(lib)).get('screens', [])
+            base.FRAME_NAMES = {s['node']: s['name'] for s in screens}
+            base.FRAME_H = {s['node']: int(float(s['h'])) for s in screens if str(s.get('h', '')).replace('.', '', 1).isdigit()}
         self.refs_dir = os.path.join(root, 'refs')
         self.specs_dir = os.path.join(root, 'specs')
         for d in (self.refs_dir, os.path.join(root, 'out')):

@@ -26,6 +26,7 @@ def nid(node):
 CROSS_FILE = False
 FRAMES_DIR = None
 FRAME_NAMES = {}          # node → frame name (from library.json), for the copy's layer name
+FRAME_H = {}              # node → frame height (from library.json): an artboard's height isn't in its JSX
 MISSING = set()           # frames a render needed but the cache doesn't have yet
 LOCAL_MODE = False        # the maps file has a Frames page: one real copy of each screen, typed once
 LOCAL = {}                # key ('<node>' or '<node>+<sheet node>') → the copy's node id on the Frames page
@@ -53,7 +54,7 @@ def _frame_html(node, sheet=None, name=None):
         return None
     tree = jsx.composite(top, fill) if fill is not None else top
     name = name or FRAME_NAMES.get(nid(node), nid(node)) + (f' + sheet of {FRAME_NAMES.get(nid(sheet), nid(sheet))}' if sheet else '')
-    return jsx.to_html(tree, size=(PW, None), layer=name)
+    return jsx.to_html(tree, size=(PW, FRAME_H.get(nid(node))), layer=name)
 
 
 def screen(node, w, radius=10, layer='Screen', sheet=None, name=None):

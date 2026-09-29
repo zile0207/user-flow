@@ -45,6 +45,10 @@ def _css(style):
         if k in _DROP:
             continue
         v = str(v).replace('"', "'")
+        if k == 'fontFamily':                  # '"Switzer-Bold", "Switzer", system-ui, sans-serif' → 'Switzer' (the weight is set apart)
+            fams = [f.strip(" '") for f in v.split(',')]
+            base_fam = next((f for f in fams if '-' not in f and f not in ('system-ui', 'sans-serif', 'serif')), fams[0])
+            v = f"'{base_fam}'" 
         if re.fullmatch(r'-?[\d.]+', v) and k not in _UNITLESS:
             v += 'px'
         if v == 'calc(infinity * 1px)':

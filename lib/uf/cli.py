@@ -542,6 +542,8 @@ def frames_local(P, board_name):
     rows = []
     for j, (key, (node, sheet)) in enumerate(sorted(need.items())):
         html = B._frame_html(node, sheet)
+        # a last, empty child: if it's on the canvas, the whole copy arrived (frames-local-commit checks it)
+        html = html[:html.rindex('</')] + f'<div layer-name="end:{key}" style="width:0px;height:0px;flex-shrink:0"></div>' + html[html.rindex('</'):]
         name = f"copy:{key} · {lib.get(node, {}).get('name', node)}" + (f" + sheet of {lib.get(sheet, {}).get('ref', sheet)}" if sheet else '')
         h = lib.get(node, {}).get('h', '844')
         h = int(float(h)) if h not in ('?', None, '') else 844
@@ -550,23 +552,37 @@ def frames_local(P, board_name):
         f = os.path.join(out, f'{j:02d}.html'); open(f, 'w').write(html)
         rows.append((name, h, left, top, f))
     print(f"{board_name}: {len(rows)} copies to make on the Frames page ({page}). Each is a real copy of a Master frame, typed once;")
-    print("boards then show them as same-file live copies. Split the list across parallel paste subagents (model haiku), 4 to 6 at once:")
+    print("boards then show them as same-file live copies. Split the list across up to 5 paste subagents at once (model sonnet: copies are")
+    print("10-25 KB and must be pasted whole; smaller models cut them short):")
     print(f"for each line: create_artboard(fileId, pageId \"{page}\", name, width 390px, height, backgroundColor #FFFFFF), then write_html(insert-children, that artboard, the file, byte for byte).")
     for r in rows:
         print(f"  {r[0]} | 390 x {r[1]} | left {r[2]} top {r[3]} | {r[4]}")
-    print("Then one update_styles with each new artboard's left/top, and `_uf.py frames-local-commit <tree of the Frames page, or \"<id> <name>\" lines>`.")
+    print("Then one update_styles with each new artboard's left/top, and `_uf.py frames-local-commit <get_tree_summary(root_node_<Frames page>, depth 3)>`:")
+    print("it records the copies and names any that arrived incomplete (no end: marker), to delete and make again.")
 
 
 def frames_local_commit(P, path):
     rows, _ = board.Board.read_tree(path)
+    text = board.tree_data(open(path).read())
+    text = text if isinstance(text, str) else ''
+    ends = set(re.findall(r'"end:([^"]+)"', text))
+    deep = bool(re.search(r'^ {6}\S', text, re.M))          # a depth-3 tree shows the end: markers
     local = json.load(open(_local_path(P))) if os.path.exists(_local_path(P)) else {}
-    n = 0
+    n, bad = 0, []
     for nid_, name in rows:
         name = name.strip()
         if name.startswith('copy:'):
             key = name[5:].split(' · ')[0].strip()
+            if deep and key not in ends:
+                bad.append((nid_, name)); continue
             local[key] = {'id': nid_, 'name': name}
             n += 1
+    if bad:
+        print(f'{len(bad)} copies arrived incomplete (no end: marker). Delete them and make them again:')
+        for nid_, name in bad:
+            print(f'  {nid_}  {name}')
+    elif not deep:
+        print('(no depth-3 tree given: copies were recorded without checking they arrived whole)')
     with open(_local_path(P), 'w') as f:
         json.dump(local, f, indent=1, ensure_ascii=False); f.write('\n')
     print(f'frames_local.json: {n} copies recorded ({len(local)} in all). Render the board again: its cards are now live copies.')

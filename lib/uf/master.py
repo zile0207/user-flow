@@ -23,21 +23,22 @@ class MasterMap:
         self.areas = []
 
     def area(self, name, sub, items, entries=''):
-        """items: ('card', img, ref, title) for a designed screen · ('gap', gid) for a registry gap."""
+        """items: ('card', node, ref, title) for a designed screen (node = the real frame's Paper id) · ('gap', gid)."""
         self.areas.append(dict(name=name, sub=sub, items=items, entries=entries))
 
     # ---------------- pieces
-    def _card(self, img, ref, title):
+    def _card(self, node, ref, title):
         return (f'<div layer-name="{ref} · {title}" style="width:{CARD_W}px;height:{CARD_H}px;background:#FFFFFF;border:1px solid {LINE};border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box">'
-                f'<img src="paper-asset://{self.P.img_dir}/{img}.png" style="width:{THUMB_W}px;height:{THUMB_H}px;border-radius:8px;border:1px solid {LINE};object-fit:cover;flex-shrink:0" />'
+                + base.screen(node, THUMB_W, 8)
                 + t(ref, 10, 13, 700, MUTED, 'letter-spacing:0.06em;padding:0 2px;') + t(title, 12, 15, 700, INK, 'padding:0 2px;') + '</div>')
 
     def _gap(self, gid):
         g = self.P.gap(gid); st = g.get('state', 'todo')
-        if st in ('explored', 'promoted'):
-            return (f'<div layer-name="{gid} · {g["title"]} · explored" style="width:{CARD_W}px;height:{CARD_H}px;background:#FFFFFF;border:1px solid {LINE};border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box">'
-                    f'<img src="paper-asset://{self.P.img_dir}/{g["img"]}.png" style="width:{THUMB_W}px;height:{THUMB_H}px;border-radius:8px;border:1px solid {LINE};object-fit:cover;flex-shrink:0" />'
-                    + t((g.get('screen_ids') or [None])[0] or f'{gid} · EXPLORED', 10, 13, 700, base.ACCENT if st == 'explored' else MUTED, 'letter-spacing:0.06em;padding:0 2px;') + t(g['title'], 12, 15, 700, INK, 'padding:0 2px;') + '</div>')
+        if st in ('explored', 'promoted', 'found'):
+            label = {'explored': f'{gid} · EXPLORED', 'promoted': (g.get('screen_ids') or [gid])[0], 'found': f"{g.get('ref') or gid} · WAS {gid}"}[st]
+            return (f'<div layer-name="{gid} · {g["title"]} · {st}" style="width:{CARD_W}px;height:{CARD_H}px;background:#FFFFFF;border:1px solid {LINE};border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box">'
+                    + base.screen(g['node'], THUMB_W, 8)
+                    + t(label, 10, 13, 700, base.ACCENT if st == 'explored' else MUTED, 'letter-spacing:0.06em;padding:0 2px;') + t(g['title'], 12, 15, 700, INK, 'padding:0 2px;') + '</div>')
         col, bd = (('#6B7678', '#D3D8DA') if st == 'later' else (AMBER, '#B4BDBF'))
         tag = {'later': 'AFTER MVP', 'exploring': 'EXPLORING'}.get(st, 'NEEDS DESIGN')
         return (f'<div layer-name="To design · {g["title"]}" style="width:{CARD_W}px;height:{CARD_H}px;background:#FBFBFA;border:1.5px dashed {bd};border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box">'
@@ -52,7 +53,8 @@ class MasterMap:
     def _area_html(self, a, x, y):
         cells = ''.join(self._card(*it[1:]) if it[0] == 'card' else self._gap(it[1]) for it in a['items'])
         n_card = sum(1 for it in a['items'] if it[0] == 'card')
-        n_gap = sum(1 for it in a['items'] if it[0] == 'gap' and self.P.gap(it[1]).get('state') in ('todo', 'exploring'))
+        n_card += sum(1 for it in a['items'] if it[0] == 'gap' and self.P.gap(it[1]).get('state') in ('explored', 'promoted', 'found'))
+        n_gap = sum(1 for it in a['items'] if it[0] == 'gap' and self.P.gap(it[1]).get('state', 'todo') in ('todo', 'exploring'))
         count = f'{n_card} designed' + (f' · {n_gap} to design' if n_gap else '')
         return (f'<div layer-name="Area · {a["name"]}" style="position:absolute;left:{x}px;top:{y}px;width:{AREA_W}px;height:{self._area_h(a)}px;background:#F6F7F7;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
                 f'<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">'
@@ -84,7 +86,7 @@ class MasterMap:
         designed = sum(1 for a in self.areas for it in a['items'] if it[0] == 'card')
         gids = [it[1] for a in self.areas for it in a['items'] if it[0] == 'gap']
         states = [self.P.gap(g).get('state', 'todo') for g in gids]
-        designed += states.count('explored') + states.count('promoted')
+        designed += states.count('explored') + states.count('promoted') + states.count('found')
         todo = states.count('todo') + states.count('exploring')
         later = states.count('later')
         bar = (f'<div layer-name="Header bar" style="position:absolute;left:40px;top:40px;width:{W-80}px;height:56px;background:{INK};border-radius:14px;display:flex;align-items:center;padding:0 20px;gap:16px;box-sizing:border-box">'

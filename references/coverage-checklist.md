@@ -20,3 +20,5 @@ For each finding, record:
 - **why:** the checklist line it came from
 
 Report the new gaps as a list, then add them to the map spec with `m.gap(..., **P.g(gid))` and wire their arrows.
+
+**Before any finding becomes a gap:** look for it in the library (`_uf.py find <words>`, then a screenshot). If the screen exists, it goes on the map as a card with that frame (or the gap becomes `found`), not as a gap.

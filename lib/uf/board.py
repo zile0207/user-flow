@@ -19,8 +19,9 @@ result, or plain lines "<node id> <layer name>". get_children stops at 100 child
 import hashlib, json, os, re, sys
 from . import base
 
-VERSION = '0.3.0'
+VERSION = '0.4.0'
 CHUNK_MAX = 12000
+CLONE_MAX = 6          # live screen copies per paste chunk: each one returns a very large write_html response
 NAME_MAX = 50          # Paper truncates layer names here; keys must survive it
 
 
@@ -99,12 +100,18 @@ class Board:
     def _chunks(self, keys):
         chunks, cur = [], ''
         for k in keys:
-            if cur and len(cur) + len(self.html[k]) > CHUNK_MAX:
+            html = self.html[k]
+            if cur and (len(cur) + len(html) > CHUNK_MAX
+                        or cur.count('<x-paper-clone') + html.count('<x-paper-clone') > CLONE_MAX):
                 chunks.append(cur); cur = ''
-            cur += self.html[k]
+            cur += html
         if cur:
             chunks.append(cur)
         return chunks
+
+    def clones(self):
+        """key → the Paper frames each element copies (for `_uf.py stale`)."""
+        return {k: re.findall(r'<x-paper-clone node-id="([^"]+)"', self.html[k]) for k in self.keys if '<x-paper-clone' in self.html[k]}
 
     def emit(self, W, H, page='maps'):
         full = self._dir('full'); sync = self._dir('sync')
@@ -120,6 +127,7 @@ class Board:
             els.append([k, h(b), h(_unplaced(b)) if pos else h(b), pos[0] if pos else None, pos[1] if pos else None])
         manifest = {'board': self.name, 'version': VERSION, 'format': 2, 'size': [W, H], 'page': page, 'elements': els}
         json.dump(manifest, open(os.path.join(self._dir(), 'manifest.json'), 'w'), indent=1)
+        json.dump(self.clones(), open(os.path.join(self._dir(), 'clones.json'), 'w'), indent=1)
 
         prev = json.load(open(self._state_path())) if os.path.exists(self._state_path()) else None
         pinned = self.P.cfg.get('plugin_version')

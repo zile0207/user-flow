@@ -7,7 +7,8 @@
   boards/          what is painted on each Paper board (written by `--commit`), for sync
   ui_kit.py        the app's own screen parts, copied from its confirmed screens (for explorations)
   specs/           one file per map or exploration: master.py, j1.py, f1.py, explore_n2_1.py …
-  img/  refs/      exported screen PNGs and reference images (gitignored, re-exportable)
+  library.json     index of the library page (every confirmed screen), from `_uf.py library`
+  refs/            reference images from other apps, for explorations (gitignored). Screens are never images.
   out/             rendered chunks (gitignored)
 """
 import json, os, re
@@ -37,10 +38,9 @@ class Project:
         self.cfg = json.load(open(os.path.join(root, 'config.json')))
         th = self.cfg.get('theme', {})
         base.set_theme(th.get('accent'), th.get('font'), tuple(th['device']) if th.get('device') else None)
-        self.img_dir = os.path.join(root, 'img')
         self.refs_dir = os.path.join(root, 'refs')
         self.specs_dir = os.path.join(root, 'specs')
-        for d in (self.img_dir, self.refs_dir, os.path.join(root, 'out')):
+        for d in (self.refs_dir, os.path.join(root, 'out')):
             os.makedirs(d, exist_ok=True)
 
     def out(self, name):
@@ -96,7 +96,7 @@ class Project:
         """kwargs for Map.gap(...) straight from the registry, so maps never copy gap text by hand."""
         g = self.gap(gid)
         return dict(title=g['title'], need=g['need'], gid=gid, state=g.get('state', 'todo'),
-                    chosen=g.get('chosen'), round=g.get('round'), img=g.get('img'), screen_ids=g.get('screen_ids'))
+                    chosen=g.get('chosen'), round=g.get('round'), node=g.get('node'), ref=g.get('ref'), screen_ids=g.get('screen_ids'))
 
 
     # ---------------- questions and decisions

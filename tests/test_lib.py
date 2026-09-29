@@ -209,6 +209,61 @@ def test_bus_ends_are_keyed_by_their_node():
     assert 'e_g3_bus' in keys and 'e_bus_top' in keys, keys
 
 
+def test_boards_never_show_images():
+    """Screens are live copies of real Paper frames. Only an exploration's references (other apps) may be images."""
+    import glob
+    root = fresh()
+    for spec in ('journey', 'master', 'states', 'promote', 'explore'):
+        run(root, f'{spec}.py')
+    for board_dir in glob.glob(os.path.join(root, 'out', '*')):
+        html = ''.join(open(f).read() for f in glob.glob(os.path.join(board_dir, 'full', '*.html')))
+        imgs = re.findall(r'<img [^>]*>', html)
+        if os.path.basename(board_dir).startswith('explore'):
+            imgs = [i for i in imgs if '/refs/' not in i]
+        assert not imgs, (board_dir, imgs[:2])
+    html = ''.join(open(f).read() for f in glob.glob(os.path.join(root, 'out', 'journey', 'full', '*.html')))
+    assert 'x-paper-clone node-id="S1-0"' in html and 'zoom:0.4615' in html
+
+
+def test_chunks_hold_few_copies():
+    from uf import board
+    root = fresh()
+    run(root, 'journey.py')
+    import glob
+    for f in glob.glob(os.path.join(root, 'out', '*', 'full', '*.html')):
+        assert open(f).read().count('<x-paper-clone') <= board.CLONE_MAX, f
+
+
+def test_library_index_find_and_found_gaps():
+    root = fresh()
+    os.makedirs(os.path.join(root, 'out'), exist_ok=True)
+    tree = os.path.join(root, 'out', 'lib.txt')
+    open(tree, 'w').write(json.dumps({'summary': '\n'.join([
+        ' "" (root_node_p-1-0) ?×?',
+        '  Frame "DO4 · Tap Use my location · the phone asks" (PY1-0) 390×844', '    ... 5 children',
+        '  Frame "B5 · Auth" (1C5N-0) 390×844',
+        '  Frame "5.4 · 7 · The video is private · Decided" (ITS-0) 390×844',
+        '  Frame "5.4 · ONE LINK · DECIDED" (BGG-0) 5560×?',
+        '  Frame "ROW · MONDAY" (15B0-0) 12530×120'])}))
+    assert '3 screens, 2 headers' in run(root, '_uf.py', 'library', tree)
+    out = run(root, '_uf.py', 'find', 'video', 'private')
+    assert out.strip().startswith('ITS-0'), out
+    assert 'ITS-0' in run(root, '_uf.py', 'unplaced', 'journey', '5.4')
+    run(root, '_uf.py', 'set-gap', 'N1·1', 'state=found', 'node=1C5N-0', 'ref=B5')
+    run(root, 'journey.py')
+    html = ''.join(open(os.path.join(root, 'out', 'journey', 'full', f)).read() for f in sorted(os.listdir(os.path.join(root, 'out', 'journey', 'full'))))
+    assert 'node-id="1C5N-0"' in html and 'B5 · WAS N1·1' in html
+    assert '1 found in the library' in run(root, '_uf.py', 'status')
+
+
+def test_stale_recopies_on_next_sync():
+    root = fresh()
+    run(root, 'journey.py'); run(root, 'journey.py', '--commit', 'A-0')
+    assert '1 elements will be re-copied' in run(root, '_uf.py', 'stale', 'journey', 'S1')
+    out = run(root, 'journey.py')
+    assert '1 replace' in out, out
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

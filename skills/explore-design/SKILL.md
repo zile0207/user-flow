@@ -14,12 +14,13 @@ description: Design a needs-design gap (N2·3 style id) on its own exploration b
 - **"Confirm X", "iterate on X", "more variants" without an id:** if exactly one board is open (a gap in state `exploring`), it's that one. Otherwise ask which exploration.
 - **Nothing to go on:** run `_uf.py gaps --state todo` and `--state exploring`, show the list grouped by map (the persona's-path gaps come first), and ask which one. Don't guess.
 - **The id already has a board** (`config.json` → `maps.explorations`): the prompt is a reply to a round. Go to step 5.
+- **Already designed?** Run `_uf.py find --gap <id>` and screenshot the best hits. If the library already has this screen, say so: offer to mark the gap `found` (`_uf.py set-gap <id> state=found node=<node> ref=<ref>`, then sync the maps) instead of exploring.
 - **Blocking questions:** run `_uf.py blocking <id>`. If an open question blocks this gap (Q1·3 "code or password?" blocks N1·2), ask it first, with your recommendation. Carry on only when it's answered (record it with **answer-questions**), or when the user says to explore both answers, one direction each.
 - Otherwise, start at step 1.
 
 ## 1. Understand the gap
 - From `gaps.json`: title, need, where.
-- From the map spec, the nodes before and after it: what the person just did, and where they go next. Those neighbours set the context and the look.
+- From the map spec, the nodes before and after it: what the person just did, and where they go next. Those neighbours set the context and the look. In the brief's "where it sits", a neighbouring screen is its node id (a live copy), never an image.
 - Write the brief: the need in 2 or 3 sentences, 3 to 6 checkable "must do" points, and "where it sits" (before → this → after).
 
 ## 2. References
@@ -47,8 +48,8 @@ Follow `references/explore-board.md` → "The three replies" exactly:
 - **Confirm X:**
   - Run the design review on the chosen direction.
   - Set the spec's `status` to confirmed, re-render, then **sync-board** the board (header, chosen heading and bar are replaced; the outline is inserted).
-  - Export `X·1` to `img/<id>_X.png`.
-  - Run `_uf.py set-gap <id> state=explored chosen=X round=<n> img=<id with - for ·>_X`.
+  - Find the node id of the chosen screen `X·1` on the board (`get_tree_summary` of `<board>:dir<X>screens`, depth 2).
+  - Run `_uf.py set-gap <id> state=explored chosen=X round=<n> node=<that node id>`. The maps show a live copy of that frame, never an image.
   - Re-render and **sync-board** every map that shows the gap. The card and the counts follow the registry.
 - If the chosen design adds new states the maps didn't have, run **audit-flow** on that journey.
 - Then offer **promote-design**, which puts the confirmed screens on the screens page for developers.

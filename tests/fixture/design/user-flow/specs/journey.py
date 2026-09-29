@@ -5,9 +5,9 @@ m = Map(1, P)
 Y1, Y2 = row_y(1), row_y(2)
 m.seq(Y1, 40, [
     ('pill', 'start', dict(w=180, text='Sam opens the app', sub='Mon', style='start'), 70),
-    ('card', 's1', dict(img='S1', ref='A·1', title='Welcome', note='First screen.', jamie=True), 90),
+    ('card', 's1', dict(node='S1-0', ref='A·1', title='Welcome', note='First screen.', jamie=True), 90),
     ('dia', 'd1', dict(text='Signed in?', sys=True), 90),
-    ('card', 's2', dict(img='S2', ref='A·2', title='Home', note='Done.', jamie=True), 70),
+    ('card', 's2', dict(node='S2-0', ref='A·2', title='Home', note='Done.', jamie=True), 70),
 ])
 m.gap('g1', m.under('d1', Y2), Y2, **P.g('N1·1'))
 m.gap('g2', 900, Y2, **P.g('N1·2'))

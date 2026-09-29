@@ -27,20 +27,20 @@ class Map:
         """journey_no: the number used in gap ids (N<no>·<n>). project: from `from _uf import P`."""
         self.J = journey_no
         self.P = project
-        self.IMG = project.img_dir
         self.N = {}
         self.E = []
 
     # ---------------- nodes (y is always the row's attach line)
-    def card(self, i, x, y, img, ref, title, note, jamie=False):
-        """A designed screen. img = file name in img/ (no .png), ref = User Flow ID like 'E7·5'."""
-        self.N[i] = dict(kind='card', x=x, y=y - ATTACH, w=CW, h=CH, img=img, ref=ref, title=title, note=note, jamie=jamie)
+    def card(self, i, x, y, node, ref, title, note, jamie=False):
+        """A designed screen. node = the Paper node id of the real frame (from the library page, ideally),
+        shown as a live copy, never an image. ref = the screen's id where it lives, like 'DO4' or '5.4·6'."""
+        self.N[i] = dict(kind='card', x=x, y=y - ATTACH, w=CW, h=CH, node=node, ref=ref, title=title, note=note, jamie=jamie)
 
-    def gap(self, i, x, y, title, need, gid=None, state='todo', later=False, chosen=None, round=None, img=None, screen_ids=None):
-        """A screen that needs design. gid = 'N2·3' (stable, never renumber).
-        state: todo | exploring | explored (then chosen, round, img) ; later=True for after-MVP."""
+    def gap(self, i, x, y, title, need, gid=None, state='todo', later=False, chosen=None, round=None, node=None, ref=None, screen_ids=None):
+        """A screen that needs design. gid = 'N2·3' (stable, never renumber). Always pass **P.g(gid).
+        state: todo | exploring | later | found (the library had it: node, ref) | explored (chosen, round, node) | promoted."""
         if later: state = 'later'
-        self.N[i] = dict(kind='gap', x=x, y=y - ATTACH, w=CW, h=CH, title=title, need=need, gid=gid, state=state, chosen=chosen, round=round, img=img, screen_ids=screen_ids)
+        self.N[i] = dict(kind='gap', x=x, y=y - ATTACH, w=CW, h=CH, title=title, need=need, gid=gid, state=state, chosen=chosen, round=round, node=node, ref=ref, screen_ids=screen_ids)
 
     def dia(self, i, cx, y, text, sys=False):
         """A decision. sys=False: the user decides (white). sys=True: Argo or the phone decides (ink)."""
@@ -158,20 +158,27 @@ class Map:
         if k == 'card':
             ref_col = base.ACCENT if d['jamie'] else MUTED
             return (f'<div layer-name="{d["ref"]} · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
-                    f'<img src="paper-asset://{self.IMG}/{d["img"]}.png" style="width:180px;height:390px;border-radius:10px;border:1px solid {LINE};object-fit:cover;flex-shrink:0" />'
+                    + base.screen(d['node'], 180) +
                     f'<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">'
                     + t(d['ref'], 11, 14, 700, ref_col, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK) + t(d['note'], 12, 16, 500, MUTED) + '</div></div>')
         if k == 'gap':
             g, st = d['gid'], d['state']
+            if st == 'found':
+                lib = self.P.cfg.get('sources', {}).get('paper', {}).get('library_page_name', 'the library page')
+                ref = d.get('ref') or g
+                return (f'<div layer-name="{ref} · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
+                        + base.screen(d['node'], 180) +
+                        '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">' + t(f'{ref} · WAS {g}', 11, 14, 700, MUTED, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK)
+                        + t(f'Already designed, on {lib}.', 12, 16, 500, MUTED) + '</div></div>')
             if st == 'promoted':
                 sid = (d.get('screen_ids') or [g])[0]
                 return (f'<div layer-name="{sid} · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
-                        f'<img src="paper-asset://{self.IMG}/{d["img"]}.png" style="width:180px;height:390px;border-radius:10px;border:1px solid {LINE};object-fit:cover;flex-shrink:0" />'
+                        + base.screen(d['node'], 180) +
                         '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">' + t(f'{sid} · FROM {g}', 11, 14, 700, MUTED, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK)
                         + t(f'Designed in Explore · {g} ({d["chosen"]}).', 12, 16, 500, MUTED) + '</div></div>')
             if st == 'explored':
                 return (f'<div layer-name="{g} · {d["title"]} · explored" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
-                        f'<div style="position:relative;width:180px;height:390px;flex-shrink:0"><img src="paper-asset://{self.IMG}/{d["img"]}.png" style="width:180px;height:390px;border-radius:10px;border:1px solid {LINE};object-fit:cover" />'
+                        f'<div style="position:relative;width:180px;height:390px;flex-shrink:0">' + base.screen(d['node'], 180) +
                         f'<div style="position:absolute;left:8px;top:8px;background:{base.ACCENT};border-radius:999px;padding:4px 9px">' + t(f'EXPLORED · {d["chosen"]}', 10, 12, 700, '#FFFFFF', 'letter-spacing:0.08em;') + '</div></div>'
                         '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">' + t(g, 11, 14, 700, base.ACCENT, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK)
                         + t(f'Chosen: {d["chosen"]}, round {d["round"]}. See Explore · {g}.', 12, 16, 500, MUTED) + '</div></div>')

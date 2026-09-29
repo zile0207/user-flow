@@ -16,8 +16,8 @@
   specs/f<N>.py       flow maps (JTBD)
   specs/states_<slug>.py  state maps
   specs/explore_<id>.py   exploration boards, id with - for · (explore_n2_1.py)
-  img/                screen PNGs named after their source id (gitignored, re-exportable)
-  refs/               reference images (gitignored)
+  library.json        index of the library page: every confirmed screen, with its node id (committed)
+  refs/               reference images from other apps, for explorations only (gitignored)
   out/<name>/NN.html  rendered chunks (gitignored)
 ```
 
@@ -31,7 +31,8 @@
   "sources": {
     "paper": {"file_id": "...",
               "screens_page": "p-2-0", "screens_page_name": "User Flow",
-              "more_screens_pages": [{"id": "p-1-0", "name": "Confirmed Screens From Exploration", "use": "decided variants, read only"}],
+              "library_page": "p-1-0", "library_page_name": "Confirmed Screens From Exploration",
+              "promote_page": "p-1-0",
               "maps_page": "p-3-0", "maps_page_name": "User Journey",
               "explore_page": "p-4-0", "explore_page_name": "Exploration",
               "legacy_file_ids": ["..."]},
@@ -51,10 +52,11 @@
 }
 ```
 - `legacy_file_ids`: files no skill may write to. Check every Paper write's file id against this list.
-- `more_screens_pages`: other pages with finished screens. map-master reads them too; promote-design never writes there unless the user says so.
+- `library_page`: the page that holds every confirmed screen of the app, however messy (see The library). `screens_page` is the curated story, if there is one.
+- `promote_page`: where promote-design puts confirmed explorations. Defaults to the library page, else the screens page.
 
 ## The registries: gaps and questions
-`gaps.json` entries: `{"id", "map", "title", "need", "where", "state", "on_path"?, "round"?, "chosen"?, "img"?, "board"?, "screen_ids"?, "chapter"?}`.
+`gaps.json` entries: `{"id", "map", "title", "need", "where", "state", "on_path"?, "round"?, "chosen"?, "node"?, "ref"?, "board"?, "screen_ids"?, "chapter"?}`. `node` is the Paper frame the map shows once the gap is `found`, `explored` or `promoted`.
 `questions.json` entries: `{"id", "map", "text", "about", "state": "open" | "waiting" | "decided", "decision"?, "owner"?, "date"?, "blocks"?}`.
 
 Change them with the project command line, **once, from the shell, never inside a spec** (a spec runs on every render):
@@ -83,19 +85,25 @@ When the source has no usable step number (steps unnumbered, restarting in a sec
 3. a frame named with an older scheme keeps that name as `ref`, with the chapter in front (`B1 · DO9`).
 
 ## Duplicates
-The same screen shown twice in a story counts once on the master map. It's a duplicate when the frame name **and** the step label match, or when two exports are pixel-identical after cropping the status bar. Keep screens that differ in state (empty, error, loading, a different sheet stop) even if they look alike.
+The same screen shown twice in a story counts once on the master map. It's a duplicate when the frame name **and** the step label match, or when two frames have the same tree summary and screenshot. Keep screens that differ in state (empty, error, loading, a different sheet stop) even if they look alike.
 ## Rendering and painting
 - Run `python3 specs/<spec>.py`. A failed check (overlap, a decision with one exit, a missing gap id) is a bug in the spec: fix the spec. Warnings (labels overlapping, a row with no label) are layout problems a person would see: fix them too.
 - `sync.md` covers painting a new board in full, syncing an existing one, checking for hand edits, and the paste subagent prompt.
 - The rules in `config.json` → `rules` apply to everything an agent writes: map notes, gap needs, and the copy in explorations.
 
-## Exporting screens
-- `export({nodes: {<node id>: [{format: 'png', scale: '1x'}]}})` writes `~/Downloads/<layer name>.png` and returns each `filePath`. Move each file into `img/<node id without -0>.png` straight after the batch.
-- **Batches of at most 12 nodes.** Bigger batches can return `[]` and write only some files.
-- **Never two nodes with the same layer name in one batch:** they write to the same file. Split them across batches.
-- Paper turns `/ : ?` in names into `_`. Use the returned `filePath`, don't rebuild the name.
-- After each batch, count the files you moved. Re-export anything missing. Only delete files you created.
-- Thumbnails use `paper-asset://<absolute path>`. Paper uploads the image when you paste.
+## Screens on boards: real frames, never images
+Every screen on a map, the master map, a state map or an exploration's "where it sits" strip is a **live copy of the real Paper frame**, made by the renderer as `<x-paper-clone node-id="…" style="zoom:…">` inside a clipped box (`uf.base.screen`). The frame inside keeps its real size, layers and values, so anyone can inspect it; `zoom` only scales how it shows.
+- Specs name frames by **node id** (`node='PY1-0'`), never by image. Don't export PNGs of screens, and don't put `<img>` screenshots of the app on any board. The only images allowed are an exploration's references from other apps.
+- Take the node from the **library page** where the screen exists there. Use another page's frame only when the library doesn't have it, and say so in the card's note.
+- A copy doesn't follow later edits to its source. When a library screen changes, run `_uf.py stale <board> <node id>` (or `all`) and sync: those copies are replaced with fresh ones.
+- Pasting copies returns very large responses (every copied layer is listed). Chunks hold at most 6 copies; always paste chunks with copies through the paste subagent.
+
+## The library
+The library page holds every confirmed screen, however it's organised. Journeys put these screens in context, so **before anything becomes a needs-design gap, look for it in the library.**
+- Index it once, and again when the page changes: `get_tree_summary(root_node_<library page>, depth 1)` → save to `out/library_tree.txt` → `python3 design/user-flow/specs/_uf.py library out/library_tree.txt`. Frames as wide as the device are screens; wider or short frames are headers and bands.
+- `_uf.py find <words>` or `_uf.py find --gap N2·3` lists candidate screens by name. Confirm each with `get_screenshot` before using it.
+- `_uf.py unplaced <board> <group,group>` lists library screens in those groups (the first part of a frame name, like `5.4`, `DO`, `MON`) that the board doesn't show yet.
+- A gap the library already covers becomes `found`: `_uf.py set-gap N1·5 state=found node=PY1-0 ref=DO4`. Maps then show that frame, labelled "DO4 · was N1·5".
 
 ## Reading sources
 - **Paper:** get_basic_info for the screens page, get_tree_summary for each artboard, and a screenshot to understand it. Use get_jsx or get_computed_styles for exact values (the UI kit), never screenshots.

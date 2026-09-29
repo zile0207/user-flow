@@ -15,6 +15,24 @@ def set_theme(accent=None, font=None, device=None):
     if device: PW, PH = device
 
 
+def nid(node):
+    """A Paper node id: '1QM5' → '1QM5-0'."""
+    node = str(node)
+    return node if '-' in node else node + '-0'
+
+
+def screen(node, w, radius=10, layer='Screen'):
+    """A real screen on a board: a live copy of the Paper frame `node`, shown at width w.
+    Never an image. `zoom` scales the copy for display only: the frame inside keeps its real size and values,
+    so anyone can inspect it. The box clips frames taller than the device."""
+    assert node, 'a screen needs the Paper node id of a real frame (boards never show images)'
+    z = round(w / PW, 4)
+    h = round(PH * z)
+    return (f'<div layer-name="{layer}" style="position:relative;width:{w}px;height:{h}px;flex-shrink:0;overflow:hidden;'
+            f'border-radius:{radius}px;border:1px solid {LINE};box-sizing:border-box;background:#FFFFFF">'
+            f'<x-paper-clone node-id="{nid(node)}" style="position:absolute;left:0px;top:0px;zoom:{z}" /></div>')
+
+
 def t(txt, size, lh, w, col, extra=''):
     return f'<div style="{F}font-size:{size}px;line-height:{lh}px;font-weight:{w};color:{col};{extra}">{txt}</div>'
 

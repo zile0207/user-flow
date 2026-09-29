@@ -75,8 +75,8 @@ def where_box(kind, top, main, sub=''):
     if kind == 'outside':
         return (f'<div style="width:160px;height:76px;border:1.5px dashed {INK};border-radius:6px;display:flex;flex-direction:column;justify-content:center;padding:0 12px;box-sizing:border-box;gap:2px">'
                 + t(top, 10, 12, 700, MUTED, 'letter-spacing:0.08em;') + t(main, 13, 17, 700, INK) + '</div>')
-    # kind == 'screen': top = image path
-    return (f'<div style="display:flex;align-items:center;gap:10px"><img src="paper-asset://{top}" style="width:60px;height:130px;border-radius:6px;border:1px solid {LINE};object-fit:cover" />'
+    # kind == 'screen': top = the Paper node id of the neighbouring screen (a live copy, never an image)
+    return (f'<div style="display:flex;align-items:center;gap:10px">' + base.screen(top, 60, 6)
             + '<div style="display:flex;flex-direction:column;gap:2px;width:110px">' + t(main, 13, 17, 700, INK) + t(sub, 12, 16, 500, MUTED) + '</div></div>')
 
 
@@ -179,15 +179,3 @@ def render(P, name, spec):
     for html in round_blocks(spec, W):
         B.add(_key(html), html)
     return B.emit(W, H, page='explore')
-
-
-def explored_card(spec, x, y, img_path):
-    """Replaces the dashed card on the journey map. Same size and position, so arrows still line up."""
-    st = spec['status']
-    return (f'<div layer-name="{spec["id"]} · {spec["title"]} · explored" style="position:absolute;left:{x}px;top:{y}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
-            f'<div style="position:relative;width:180px;height:390px;flex-shrink:0">'
-            f'<img src="paper-asset://{img_path}" style="width:180px;height:390px;border-radius:10px;border:1px solid {LINE};object-fit:cover" />'
-            f'<div style="position:absolute;left:8px;top:8px;background:{base.ACCENT};border-radius:999px;padding:4px 9px">' + t(f'EXPLORED · {st["chosen"]}', 10, 12, 700, '#FFFFFF', 'letter-spacing:0.08em;') + '</div></div>'
-            '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">'
-            + t(spec['id'], 11, 14, 700, base.ACCENT, 'letter-spacing:0.06em;') + t(spec['title'], 15, 19, 700, INK)
-            + t(f'Chosen: {st["chosen"]}, round {st["round"]}. See Explore · {spec["id"]}.', 12, 16, 500, MUTED) + '</div></div>')

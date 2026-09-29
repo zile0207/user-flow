@@ -13,7 +13,7 @@ It prints the element count, the full-paint chunk count, the artboard size, any 
 ## First paint (mode: full)
 1. Create the artboard at the printed size, on the right page. Maps go on the maps page and explorations on the explore page (see `config.json` → `sources.paper`). `create_artboard` ignores left and top: place it afterwards with `update_styles` (left, top), 80px or more right of the last board. If the board already exists unkeyed (painted before sync existed), delete its children first.
 2. Paste every `out/<board>/full/NN.html` into the artboard with `write_html(insert-children)`, byte for byte, in order.
-   - 1 or 2 chunks: paste them yourself.
+   - Chunks with screen copies (`<x-paper-clone`): always a paste subagent, since each copy returns a very large response. Other chunks: 1 or 2, paste them yourself.
    - More: hand them to **one** paste subagent at a time, with the prompt below (up to 6 chunks each). Never run two paste agents on the same artboard at once: the layer order would interleave.
 3. **Commit straight away:** `python3 specs/<spec>.py --commit <artboard id>`. The board now matches the spec, so from here on every change is a sync.
 4. Record the artboard in `config.json` → `maps`.
@@ -39,6 +39,8 @@ It prints the element count, the full-paint chunk count, the artboard size, any 
    - 7 or more replaces: hand them to one subagent with the replace prompt below (the `ops` lines are its input).
 4. **Check:** screenshot each changed node at scale 1 (get_screenshot works per node). A whole-board screenshot is capped at 2000px, so use it only for layout, never to read labels.
 5. **Commit:** `python3 specs/<spec>.py --commit <artboard id>`.
+
+A library screen changed and the maps should show the new version: `_uf.py stale <board> <node id…>` (or `all`), then sync. Those elements are replaced with fresh copies.
 
 When the plan is all zero, there is nothing to paint. Still run drift if the board may have been edited by hand, and say so either way. Commit only if the plan line mentions a renderer change (`renderer 0.2.0 → 0.3.0`), so the board records the new version.
 

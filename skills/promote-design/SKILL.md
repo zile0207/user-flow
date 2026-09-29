@@ -26,13 +26,14 @@ if __name__ == '__main__':
     C.render('Screens confirmed in explorations for Journey 2 · Collecting.', 'Mon 28 Sep 2026')
 ```
 - The render gives each screen a stable id (X2·1, X2·2, …). It stores the ids in `gaps.json` (`screen_ids`, `chapter`) and sets the gap to `promoted`. Ids are never reused or renumbered. Add new gaps at the end.
-- **First time:** create the artboard on the **screens page** (`sources.paper.screens_page`), below the last chapter, at the printed size. If `more_screens_pages` has a page meant for confirmed designs (for example "Confirmed Screens From Exploration"), ask which of the two it goes on. Paint it in full and commit (`sync.md` → First paint).
-  - This is the only time the plugin writes to a screens page. Say so and ask before doing it.
+- **First time:** create the artboard on the **promote page** (`sources.paper.promote_page`; if unset, the library page, else the screens page), after the existing content, at the printed size. Paint it in full and commit (`sync.md` → First paint).
+  - This is the only time the plugin writes to a screens page. Say so and ask before doing it, unless the user already said to go ahead.
   - Record the chapter in `config.json` → `maps.promoted`: `{"journey": <n>, "spec": "specs/promoted_j<n>.py", "artboard": "<id>", "page": "<page id>"}`.
 - **Later:** **sync-board** the chapter.
 
 ## 3. Update the maps
-- Re-export `img/<gap>_<letter>.png` from the promoted screen (layer `<board>:screenX2_1`), so the maps show what's on the screens page.
+- Point the gap at the promoted frame: find the node id of `<board>:screenX2_1` (`get_tree_summary` of the chapter, depth 1) and run `_uf.py set-gap <id> node=<that node id>`. The maps then show a live copy of the promoted screen, never an image.
+- Re-index the library (`_uf.py library …`) so the promoted screens are in it.
 - Re-render and **sync-board** every map that shows the gap, plus the master map. The card becomes a normal screen card with the new id and "Designed in Explore · N2·1 (A)".
 - Mark the exploration done in `config.json` → `maps.explorations` (`state: promoted`).
 

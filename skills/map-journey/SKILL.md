@@ -21,16 +21,16 @@ A journey map is one area of the app, drawn as a full flowchart:
 - Find the persona's path through this area in the source (story, chapters, dates). That path is row 1.
 
 ## 2. Inventory (write it down before drawing)
-- Read every source screen in scope: screenshot plus tree summary for each chapter.
+- Read every source screen in scope: the story chapters on the screens page for the persona's path, and **the library** for every screen of this area (`_uf.py find`, `_uf.py unplaced`, screenshots). Record the library groups this journey covers in `config.json` → the journey's `library_groups`.
 - List the nodes (screens, decisions, background work, outside steps, entries, exits) and the edges, each with what causes it.
-- Run `references/coverage-checklist.md` against the list. Anything missing becomes a gap. An existing gap from the registry (`_uf.py gaps`) is reused, never duplicated.
+- Run `references/coverage-checklist.md` against the list. Anything missing is searched in the library first (`_uf.py find <words>`); only what the library doesn't have becomes a gap. An existing gap from the registry (`_uf.py gaps`) is reused, never duplicated.
 - Show the user the list in short form: rows, screens per row, new gaps, open questions. Ask "go ahead?" before drawing, unless they said to go straight through.
 - After the go-ahead, add the new gaps and questions **once, from the shell** (never inside the spec, which runs on every render):
   - `python3 design/user-flow/specs/_uf.py add-gap <no> "<title>" "<need>" "<where>"` prints the new id.
   - `python3 design/user-flow/specs/_uf.py add-question J<no> "<text>"`, with `--blocks <gap ids>` when a gap can't be designed until it's answered.
 
 ## 3. Spec
-- Export the screens you need: `img/<node id>.png`.
+- Cards name the real frames by node id (`node='PY1-0'`), taken from the library where the screen exists there. Never export or show images of screens.
 - Write `specs/j<no>.py`, following the examples:
   - `from _uf import P`, `from uf.jmap import Map, row_y`, `m = Map(<no>, P)`
   - Rows via `row_y(n)`, nodes via `m.seq(...)`, or explicit x following the spacing rules.

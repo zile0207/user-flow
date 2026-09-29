@@ -21,7 +21,7 @@ SPEC = {
   'brief': {
     'needs': 'the gap\'s need, expanded to 2 or 3 sentences',
     'musts': ['3 to 6 checkable points'],
-    'where': [('outside'|'this'|'screen', top, main[, sub]), ...],   # before → this → after
+    'where': [('outside'|'this'|'screen', top, main[, sub]), ...],   # before → this → after; for 'screen', top = the frame's node id
   },
   'refs_source': 'user' | 'mobbin',
   'refs': [{'img': P.refs_dir + '/x.png', 'name': 'App', 'take': 'what to take from it', 'url': '...'}],   # 3 to 6
@@ -48,8 +48,8 @@ if __name__ == '__main__':
 2. **More variants:** add a round of new directions with the next letters.
 3. **Confirm X:**
    1. Set `status` to confirmed and re-render, then **sync** the board (`sync.md`). Sync replaces only the header, the chosen direction's heading and the bar, and inserts the outline.
-   2. Export `X·1` as a PNG and save it as `img/<id with - for ·>_X.png` (e.g. `N2-1_A.png`).
-   3. Run `_uf.py set-gap <id> state=explored chosen=X round=<n> img=N2-1_X board=<artboard>` (or `P.set_gap(...)` in Python).
+   2. Find the node id of the chosen screen `X·1` on the board: `get_tree_summary` of the `<board>:dir<X>screens` element (depth 2).
+   3. Run `_uf.py set-gap <id> state=explored chosen=X round=<n> node=<that node id> board=<artboard>`. Maps show a live copy of that frame, never an image.
    4. Re-render and **sync** every map that shows the gap. The registry change swaps the card and the counts.
    5. Offer **promote-design**, which moves the confirmed screens onto the screens page so developers build from one place.
 

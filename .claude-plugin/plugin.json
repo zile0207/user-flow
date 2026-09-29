@@ -1,6 +1,6 @@
 {
   "name": "user-flow",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Map an app's screens in Paper, from the master map to journeys to single jobs to be done. Finds the missing screens and explores them into real designs.",
   "author": {
     "name": "zile0207",

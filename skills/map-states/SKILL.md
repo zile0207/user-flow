@@ -36,7 +36,7 @@ S.state('link_failed', 'A link failed', 1, 'Argo could not read a link', 'Try ag
 if __name__ == '__main__':
     S.render('The top · every state', '<n> states · <date>', '<one sentence>', 'states_top')
 ```
-- Export any screen images you need (batches of at most 12). Render, then create the artboard `States · <element>` on the maps page, after the flows. Paint and commit it (`sync.md` → First paint), screenshot and review, then record it in `config.json` → `maps.states` as `{"element": "<element>", "spec": "specs/states_<slug>.py", "artboard": "<id>"}`.
+- Variants name the real frames by node id (library first), never images. Render, then create the artboard `States · <element>` on the maps page, after the flows. Paint and commit it (`sync.md` → First paint), screenshot and review, then record it in `config.json` → `maps.states` as `{"element": "<element>", "spec": "specs/states_<slug>.py", "artboard": "<id>"}`.
 
 ## 4. Report
 - The rule.

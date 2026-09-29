@@ -1,5 +1,4 @@
-# Exports and references are re-creatable from Paper and Mobbin; rendered chunks are build output.
-img/
+# References are re-creatable from Mobbin; rendered chunks are build output. Screens are never exported.
 refs/
 out/
 config.local.json

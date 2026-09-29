@@ -22,19 +22,21 @@ class StateMap:
         self.rows = []
 
     def state(self, key, name, priority, when, until, variants, gives_way_to=(), note='', question=None):
-        """variants: up to 4 of ('card', img, ref, label) or ('gap', gid, label).
+        """variants: up to 4 of ('card', node, ref, label) (node = the real frame's Paper id) or ('gap', gid, label).
         question: a Q id, or a list of them, still open about this state (shown in amber until decided)."""
         self.rows.append(dict(key=key, name=name, priority=priority, when=when, until=until, variants=variants,
                               gives_way_to=list(gives_way_to), note=note, question=question))
 
     def _variant(self, v):
         if v[0] == 'card':
-            _, img, ref, lab = v
+            _, node, ref, lab = v
             return (f'<div style="width:{CARD_W}px;height:{CARD_H}px;background:#FFFFFF;border:1px solid {LINE};border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box;flex-shrink:0">'
-                    f'<img src="paper-asset://{self.P.img_dir}/{img}.png" style="width:{THUMB_W}px;height:{THUMB_H}px;border-radius:8px;border:1px solid {LINE};object-fit:cover;flex-shrink:0" />'
+                    + base.screen(node, THUMB_W, 8)
                     + t(ref, 10, 13, 700, MUTED, 'letter-spacing:0.06em;padding:0 2px;') + t(lab, 12, 15, 700, INK, 'padding:0 2px;') + '</div>')
         _, gid, lab = v
         g = self.P.gap(gid)
+        if g.get('state') in ('found', 'explored', 'promoted') and g.get('node'):
+            return self._variant(('card', g['node'], g.get('ref') or (g.get('screen_ids') or [gid])[0], lab))
         return (f'<div style="width:{CARD_W}px;height:{CARD_H}px;background:#FBFBFA;border:1.5px dashed #B4BDBF;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box;flex-shrink:0">'
                 f'<div style="width:{THUMB_W}px;height:{THUMB_H}px;flex-shrink:0;border-radius:8px;background:#F1F3F3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;padding:10px;box-sizing:border-box">'
                 + t('NEEDS DESIGN', 9, 11, 700, AMBER, 'letter-spacing:0.08em;') + t(g['need'], 11, 15, 500, MUTED, 'text-align:center;') + '</div>'

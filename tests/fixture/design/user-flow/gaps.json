@@ -17,7 +17,7 @@
       "state": "explored",
       "chosen": "A",
       "round": 1,
-      "img": "N1-2_A"
+      "node": "X12A-0"
     },
     {
       "id": "N1·3",
@@ -36,7 +36,7 @@
       "state": "explored",
       "chosen": "A",
       "round": 1,
-      "img": "N1-4_A"
+      "node": "X14A-0"
     }
   ]
 }

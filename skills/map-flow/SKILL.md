@@ -26,7 +26,7 @@ Also agree on the flow's number (the next free `no` in `maps.flows`), plus:
 ## 2. Trace it
 - Walk the persona's path through the source screens and existing journey specs: the shortest real path from start to done.
 - At each step, ask: can the job fail or stall here? If yes, add a decision. Its exits are the branch that recovers, or a jump into the journey that covers it ("→ 2 · Collecting, row 3").
-- Reuse journey screens: same img, same ref. Don't redraw a journey's detail here. Link to it with exit or jump pills.
+- Reuse journey screens: same node, same ref (live copies of the real frames, never images). Don't redraw a journey's detail here. Link to it with exit or jump pills.
 - Run `references/coverage-checklist.md` on this path only. Missing steps become gaps in the registry under the journey that owns the area: `_uf.py add-gap <journey no> "<title>" "<need>" "<where>"`, once, from the shell. Questions go in as `_uf.py add-question F<no> "<text>"`.
 
 ## 3. Spec, render, paste

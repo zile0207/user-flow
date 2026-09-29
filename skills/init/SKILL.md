@@ -13,7 +13,8 @@ Creates `design/user-flow/` in the current repo, so every other user-flow skill 
 ## 1. Ask (one message, skip anything the prompt already answered)
 - **Where the designs live:** a Paper file link, a Figma file link, and/or "the codebase only". For Paper and Figma, which page has the finished screens.
 - **Where boards go:** a page for maps (offer "User Journey"), and a page for explorations (offer "Exploration"). Both are in the same file as the confirmed screens. If they don't exist yet, offer to create them (`create_page`).
-- **Other pages and files:** any other page with finished screens (it goes in `more_screens_pages`, with what it's for), and any older file to mark as legacy (`legacy_file_ids`), so no skill writes to it.
+- **The library:** the page that holds every confirmed screen of the app, however messy (`library_page`). Journeys place these screens in context, and nothing becomes a needs-design gap while the library has it. Confirmed explorations are promoted there too (`promote_page`), unless the user names another page.
+- **Legacy files:** any older file to mark as legacy (`legacy_file_ids`), so no skill writes to it.
 - **The rules:** the app's copy rules (vocabulary, banned words, what never to guess) and product rules (what may be asked, when). Read them from AGENTS.md, CLAUDE.md, a spec or a story page if they exist. Draft them, and confirm with the user.
 - **The persona:** a name and a line about them. Offer to draft it from a story or spec page if one exists.
 - **The router,** if there's a codebase: Expo Router, Next.js app router, React Navigation, or other. Detect it first, then confirm.
@@ -23,7 +24,9 @@ Creates `design/user-flow/` in the current repo, so every other user-flow skill 
 - **Figma:** the Figma MCP. List the frames on the screens page, with their node ids.
 - **Codebase:** walk the routes folder. Each route is a screen; `ref` is the route path.
 
-Don't export any images yet. The map skills export what they draw.
+- **The library:** index it (`references/project-and-paper.md` → The library): `get_tree_summary(root_node_<library page>, depth 1)` → `out/library_tree.txt` → `_uf.py library out/library_tree.txt`.
+
+Never export screen images. Boards show real frames (live copies), named by node id.
 
 ## 3. Theme and UI kit
 - Pick a screen with the richest UI (sheets, buttons, list rows). Read it with get_jsx (Paper) or get_design_context (Figma).
@@ -34,10 +37,10 @@ Don't export any images yet. The map skills export what they draw.
 
 ## 4. Write the project folder
 Copy `templates/project/` into `design/user-flow/`, then fill in:
-- `config.json`: sources (`screens_page`, `maps_page`, `explore_page`, each with its `_name`; `more_screens_pages`; `legacy_file_ids`), persona, theme, `screen_ids` (how the screens page names screens, and the fallback from `references/project-and-paper.md` → Screen ids), `rules` (copy, product, files), `plugin_version` (from `.claude-plugin/plugin.json`), `device_label`, and empty `maps`.
+- `config.json`: sources (`screens_page`, `maps_page`, `explore_page`, each with its `_name`; `library_page` + `_name`; `promote_page`; `legacy_file_ids`), persona, theme, `screen_ids` (how the screens page names screens, and the fallback from `references/project-and-paper.md` → Screen ids), `rules` (copy, product, files), `plugin_version` (from `.claude-plugin/plugin.json`), `device_label`, and empty `maps`.
 - `config.local.json`: `{"plugin_root": "<resolved plugin root>"}`. It's gitignored, one per machine.
 - `gaps.json`: `{"gaps": []}`. `questions.json`: `{"questions": []}`. `boards/.gitkeep`, so git keeps the empty folder.
-- `.gitignore`: copy `templates/project/gitignore` to `design/user-flow/.gitignore` (it ignores `img/`, `refs/`, `out/`, `config.local.json`).
+- `.gitignore`: copy `templates/project/gitignore` to `design/user-flow/.gitignore` (it ignores `refs/`, `out/`, `config.local.json`).
 
 Then run `python3 design/user-flow/specs/_uf.py` to check the bootstrap finds the plugin (it prints nothing and exits 0), and `python3 design/user-flow/specs/_uf.py status` for the first status block.
 

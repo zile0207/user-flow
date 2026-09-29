@@ -26,7 +26,9 @@ Boards out of date: none
 Next up: N1·1 Apple sign-in (no open gap on Jamie's path; first open gap)
 ```
    If the script fails (an older project without the command line), copy `templates/project/specs/_uf.py` over the project's copy first (it only adds the command line), and commit it with the project's next commit.
-4. With no request after `/user-flow`, print the status, then offer 3 or 4 next steps drawn from it (the next-up gap, open questions, out-of-date boards).
+4. With no request after `/user-flow`, print the status, then offer 3 or 4 next steps drawn from it (the next-up gap, open questions, out-of-date boards, indexing the library).
+
+Every board shows screens as live copies of the real Paper frames (library first), never as images. Every skill below follows that.
 
 ## The skills
 

@@ -73,7 +73,7 @@ A project keeps its own files in `design/user-flow/`:
 - `ui_kit.py`: the app's screen parts
 - `specs/`: one file per board
 
-Images and rendered output are gitignored and can be re-created. See [references/project-and-paper.md](references/project-and-paper.md).
+Screens on every board are live copies of the real Paper frames, never images. Reference images and rendered output are gitignored and can be re-created. See [references/project-and-paper.md](references/project-and-paper.md).
 
 ## Repo
 

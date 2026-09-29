@@ -1,6 +1,6 @@
 {
   "project": "<App name>",
-  "plugin_version": "0.3.0",
+  "plugin_version": "0.4.0",
   "device_label": "Mobile · iPhone",
   "theme": {
     "accent": "<brand colour, e.g. #E05254>",
@@ -15,7 +15,9 @@
       "file_id": "<paper file id>",
       "screens_page": "<page id>",
       "screens_page_name": "<page name>",
-      "more_screens_pages": [],
+      "library_page": "<page id: every confirmed screen, however messy>",
+      "library_page_name": "<page name>",
+      "promote_page": "<page id; defaults to the library page>",
       "maps_page": "<page id>",
       "maps_page_name": "<page name, e.g. User Journey>",
       "explore_page": "<page id>",

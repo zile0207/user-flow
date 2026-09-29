@@ -2,6 +2,8 @@
 
 Every map is rendered by `lib/uf` from a spec in the project's `design/user-flow/specs/`. Don't hand-draw a map on the canvas. Write or edit the spec, render it, paste the chunks.
 
+**Screens are real frames, never images.** Every screen on every board is a live copy of its Paper frame (`project-and-paper.md` → Screens on boards). Specs name screens by node id.
+
 ## Levels
 
 | Level | Skill | Scope | Renderer | Arrows? |
@@ -20,7 +22,7 @@ Rules across levels:
 
 | Method | Looks like | Use it for | Rules |
 |---|---|---|---|
-| `card(id, x, y, img, ref, title, note, jamie)` | A white card with a screen thumbnail | A designed screen | `ref` = the screen ID. `img` = PNG name in `img/` (the source node id). `note` = one line: what happens here. `jamie=True` puts the persona's path in the accent colour. |
+| `card(id, x, y, node, ref, title, note, jamie)` | A white card holding a live copy of the real frame | A designed screen | `node` = the frame's Paper node id, from the library page where it exists (never an image). `ref` = the screen ID. `note` = one line: what happens here. `jamie=True` puts the persona's path in the accent colour. |
 | `gap(id, x, y, **P.g('N2·3'))` | A dashed card, "N2·3 · NEEDS DESIGN" | A screen or state that isn't designed | Always pull it from the registry with `P.g(gid)`, never type gap text into a spec. States: todo, exploring, explored, later. |
 | `dia(id, cx, y, text, sys)` | A diamond | A decision | White = the user chooses. Ink (`sys=True`) = the app or the phone decides. It needs 2+ labelled exits (checked on render). |
 | `sysbox(id, x, y, w, text, sub)` | A grey box tagged with the app's name | The app working in the background | Reading, building, syncing, sending. Not for screens. |
@@ -30,10 +32,10 @@ Rules across levels:
 | `pill(..., 'entry')` | A grey dashed pill | Comes from another step or map | "From 8 · Skip" |
 | `pill(..., 'jump')` | A light pill, ↩ | Loops back to a far node | Instead of an arrow across the map |
 
-**Master map items:** `('card', img, ref, title)` and `('gap', gid)`, grouped in `area(name, sub, items, entries)`. Areas are laid out in rows in the order you add them (`MasterMap(P, columns=5)`), so add them in the order a person meets them. Questions filed under map `M` (QM·n) render in a panel at the bottom.
+**Master map items:** `('card', node, ref, title)` and `('gap', gid)`, grouped in `area(name, sub, items, entries)`. Areas are laid out in rows in the order you add them (`MasterMap(P, columns=5)`), so add them in the order a person meets them. Questions filed under map `M` (QM·n) render in a panel at the bottom.
 
 **State map rows:** `state(key, name, priority, when, until, variants, gives_way_to, note, question)`.
-- `variants` are up to 4 of `('card', img, ref, label)` or `('gap', gid, label)`: the sizes or forms the state takes, e.g. widget, half, page.
+- `variants` are up to 4 of `('card', node, ref, label)` or `('gap', gid, label)`: the sizes or forms the state takes, e.g. widget, half, page.
 - `question` links an open Q id, or a list of them, which then show on the row in amber. State maps have no panel: file their questions under the journey that owns the surface (`add-question J3 …`).
 - The board states the winning rule once, for example "Highest priority that applies wins. Ties: newest first."
 
@@ -77,4 +79,4 @@ Every render writes keyed elements, a full-paint set and a sync plan (see `sync.
 - **The decisions panel** goes in the empty bottom-right: `P.panel('J2', x, y, w)`. It renders from `questions.json`. Add questions from the shell (`_uf.py add-question J2 "…"`), never in the spec, and answer them with the answer-questions skill.
 
 ## States of a gap
-`todo` (NEEDS DESIGN) → `exploring` (EXPLORING, ROUND n) → `explored` (the chosen screen, EXPLORED · X), or `later` (AFTER MVP) at any point. State lives in `gaps.json`. Change it there and re-render the maps that show the gap.
+`todo` (NEEDS DESIGN) → `exploring` (EXPLORING, ROUND n) → `explored` (the chosen screen, EXPLORED · X) → `promoted`, or `later` (AFTER MVP) at any point. `found`: the library already had it; the card shows that frame ("DO4 · was N1·5"). State lives in `gaps.json`. Change it there and re-render the maps that show the gap.

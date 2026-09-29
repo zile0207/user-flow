@@ -12,9 +12,9 @@ The master map is the inventory. It shows every screen from every source, groupe
 
 ## 1. Collect every screen
 Merge all the sources in `config.json`:
-- **Paper or Figma screens page**, plus any `more_screens_pages` in config: every screen frame, with its id and node id. Ids follow `references/project-and-paper.md` → Screen ids. When you need the fallback (no step numbers, restarting rows, old names), write the rule you used into `config.json` → `screen_ids`.
+- **The library page** first (`library.json`; index it if missing): every confirmed screen, with its node id. Then the curated screens page (the story), for context and for screens the library lacks. Figma: the screens page's frames. Each screen's id and node id. Ids follow `references/project-and-paper.md` → Screen ids. When you need the fallback (no step numbers, restarting rows, old names), write the rule you used into `config.json` → `screen_ids`.
 - For a big page, list the screens with a script-like pass: get_basic_info for the artboards, then get_tree_summary per chapter. Save the list to `out/screens.json` as you go, so it survives a long run.
-- **Codebase routes:** every route. Match each one to its design screen by name and purpose. A route with no design becomes a card with `ref` = the route and a code screenshot if available. If there's no image, make it a gap titled after the screen (for example "Constraints"), with the need "Built in code at <route>, no design yet".
+- **Codebase routes:** every route. Match each one to its design screen by name and purpose. A route with no design becomes a gap titled after the screen (for example "Constraints"), with the need "Built in code at <route>, no design yet".
 - **Gaps:** everything in `gaps.json`.
 
 Drop duplicates by the rule in `references/project-and-paper.md` → Duplicates: the same screen shown twice in a story counts once. Keep states that differ (empty, error, loading) as separate screens.
@@ -25,7 +25,7 @@ Drop duplicates by the rule in `references/project-and-paper.md` → Duplicates:
 - Each area gets a subtitle (source chapters or routes) and its entry points in words.
 
 ## 3. Spec, render, paste
-- Export each screen once at 1x into `img/<node id without -0>.png`, in batches of at most 12 (`references/project-and-paper.md` → Exporting screens).
+- Every card is `('card', <node id>, <ref>, <title>)`: a live copy of the real frame, never an image. Take the node from the library where the screen exists there.
 - Write `specs/master.py`:
 ```python
 from _uf import P

@@ -1,6 +1,6 @@
 {
   "project": "Fixture",
-  "plugin_version": "0.3.0",
+  "plugin_version": "0.4.0",
   "theme": {
     "accent": "#E05254",
     "font": "Switzer",
@@ -15,7 +15,9 @@
       "screens_page": "p-1",
       "screens_page_name": "Screens",
       "maps_page": "p-2",
-      "explore_page": "p-3"
+      "explore_page": "p-3",
+      "library_page": "p-1-0",
+      "library_page_name": "Confirmed Screens"
     }
   },
   "persona": {
@@ -28,7 +30,7 @@
     "flows": [],
     "explorations": [
       {
-        "gap": "N1\u00b74",
+        "gap": "N1·4",
         "spec": "specs/explore.py",
         "artboard": "TEST"
       }

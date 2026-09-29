@@ -17,7 +17,13 @@ Check the map and the registry first: the screen may already be drawn (a designe
 - Take it from the prompt (for example "journey 2", "the master map", "flow 1"). If there's no map, list what exists in `config.json` and ask.
 - Read its spec, and screenshot its artboard so you audit what people actually see.
 
-## 2. Audit
+## 2. The library first
+If `config.json` has a `library_page` (index it first if `library.json` is missing):
+- **Gaps already designed:** for every `todo` gap on this map, run `_uf.py find --gap <id>` and screenshot the best hits. A match becomes `found`: `_uf.py set-gap <id> state=found node=<node> ref=<ref>`.
+- **Library screens missing from the map:** work out which library groups belong to this map (frame-name prefixes like `5.4`, `DO`, `PRE`; record them in `config.json` → the map's `library_groups`), then `_uf.py unplaced <board> <groups>`. Each one goes on the map where it happens for the persona, with its context: which screen leads to it, what the person did, where they go next. Screens that don't belong to this map are left for the map that owns them.
+- **Designed cards use library frames:** a card that shows a frame from another page gets the library's twin of that screen, when it has one.
+
+## 3. Audit
 Go through the checklist line by line against the map:
 - **Journey or flow:** at every screen and every decision, ask each checklist line. "Would the person see something here that isn't drawn?"
 - **Master:** per area, check for missing empty, error and loading states; routes with no design; designs with no route; and areas with no way in.
@@ -26,20 +32,23 @@ Go through the checklist line by line against the map:
   - every decision exit is labelled, and so is any arrow whose cause isn't obvious (`nodes-and-layout.md` → Arrows)
   - the render prints no warnings (labels overlapping, a row without a label)
   - no gap duplicates another gap (search the registry by title and need)
-  - `explored` gaps have their img
+  - `found`, `explored` and `promoted` gaps have a `node` (the frame the maps show)
+  - no board shows a screen as an image: every screen is a live copy of a frame
   - the counts on the board match the spec
   - the board has no hand edits (run `--drift`, see `references/sync.md`)
   - needs and notes follow `config.json` → `rules`
 
-## 3. Show findings before changing anything
+## 4. Show findings before changing anything
 One list, grouped by checklist line:
 ```
 Failure · N2·11 (new) "Reading timed out": Argo gave up after 3 minutes. Say so, keep what it found, offer Try again. · where: row 1, after "Argo reads it"
+Library · N2·7 "Board made" is DO13 (After Make board · your first board, Undo) → found
+Library · 5.4·8 "The video is gone" isn't on the map → row 3, after "Argo reads it", beside 5.4·7
 Consistency · "Why not?" has no exit for offline. Add it.
 ```
 Ask which to keep. Default is all.
 
-## 4. Apply
+## 5. Apply
 - Add each kept gap once, from the shell: `python3 design/user-flow/specs/_uf.py add-gap <journey no> "<title>" "<need>" "<where>"`. It prints the id, which is never reused. Never call it inside a spec.
 - Add it to the map spec with `m.gap(id, x, y, **P.g(gid))`, plus its arrows. Keep the layout rules: branch straight down, lane routing, spacing.
 - Fix consistency issues in the spec.
@@ -47,7 +56,7 @@ Ask which to keep. Default is all.
 - Re-render, then **sync-board**. Screenshot and review.
 - If the master map exists, add the new gaps to their areas.
 
-## 5. Report
+## 6. Report
 - New gap ids with their titles.
 - Fixes made.
 - The new counts.

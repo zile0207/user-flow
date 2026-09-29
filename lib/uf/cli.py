@@ -11,13 +11,18 @@ set-gap <gap id> key=value …            numbers and true/false are JSON, anyth
 add-question <map id> <text> [--blocks N1·2,N1·3] [--about <text>]
 answer <q id> [<decision>] [--owner <who>] [--date <date>]
 add-rule copy|product <text>
+library <tree file>                     index the library page: get_tree_summary(root_node_<page>, depth 1), saved
+find <words…> | --gap <gap id>          library screens that match (confirm each with a screenshot)
+unplaced <board> <group,group…>         library screens in those groups that the board doesn't show yet
+stale <board> <node id…> | all          copies of these frames get re-copied on the next sync (after the source changed)
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
 """
 import json, os, re, subprocess, sys
 from . import board
+from .base import nid as board_nid
 
-STATE_ORDER = ('todo', 'exploring', 'explored', 'promoted', 'later')
+STATE_ORDER = ('todo', 'exploring', 'found', 'explored', 'promoted', 'later')
 
 
 def _opt(args, name, default=None):
@@ -95,7 +100,10 @@ def status(P):
     st = cfg.get('maps', {}).get('states', [])
     lines.append('States: ' + (' · '.join(e.get('element') or e.get('name') or e.get('spec', '') for e in st) or 'none'))
     c = {s: sum(1 for g in gaps if g.get('state', 'todo') == s) for s in STATE_ORDER}
-    lines.append(f"Gaps: {c['todo']} to design · {c['exploring']} exploring · {c['explored']} explored · {c['promoted']} promoted · {c['later']} after MVP")
+    lines.append(f"Gaps: {c['todo']} to design · {c['exploring']} exploring · {c['found']} found in the library · {c['explored']} explored · {c['promoted']} promoted · {c['later']} after MVP")
+    lib = P.cfg.get('sources', {}).get('paper', {}).get('library_page')
+    if lib and not os.path.exists(os.path.join(P.root, 'library.json')):
+        lines.append('Library: not indexed yet · run `_uf.py library` (see project-and-paper.md → The library)')
     qs = P.questions()
     lines.append(f"Questions: {sum(q['state'] == 'open' for q in qs)} open · {sum(q['state'] == 'waiting' for q in qs)} waiting on someone")
     lines.append('Boards out of date: ' + (', '.join(out_of_date) or 'none'))
@@ -229,6 +237,36 @@ def main(P, argv):
         print(json.dumps([q for q in P.questions() if q['id'] == args[0]][0], ensure_ascii=False))
     elif cmd == 'ops':
         ops(P, args)
+    elif cmd in ('library', 'find', 'unplaced'):
+        from .library import Library
+        L = Library(P)
+        if cmd == 'library':
+            n, hd = L.build(args[0])
+            print(f'library.json: {n} screens, {hd} headers and bands')
+        elif cmd == 'find':
+            if not L.data:
+                print('No library.json yet: run `_uf.py library <tree file>` first.'); sys.exit(2)
+            gid = _opt(args, '--gap')
+            q = ' '.join(args)
+            if gid:
+                g = P.gap(gid); q = f"{g['title']} {g['need']} {q}"
+            for score, hit, s in L.find(q):
+                print(f"{s['node']:>8}  {s['name']}   ({', '.join(hit)})")
+        else:
+            for s in L.unplaced(args[0], set(args[1].split(','))):
+                print(f"{s['node']:>8}  {s['name']}")
+    elif cmd == 'stale':
+        name = args.pop(0)
+        clones = json.load(open(os.path.join(P.root, 'out', name, 'clones.json')))
+        want = None if args == ['all'] else {board_nid(a) for a in args}
+        keys = [k for k, ns in clones.items() if want is None or want & set(ns)]
+        sp = os.path.join(P.root, 'boards', f'{name}.json')
+        st = json.load(open(sp))
+        for e in st['elements']:
+            if e[0] in keys:
+                e[1] = e[2] = 'stale'
+        json.dump(st, open(sp, 'w'), indent=1)
+        print(f'{len(keys)} elements will be re-copied on the next sync of {name}')
     elif cmd == 'add-rule':
         P.add_rule(args[0], args[1])
         print(f"{args[0]} rules: {len(P.cfg['rules'][args[0]])}")

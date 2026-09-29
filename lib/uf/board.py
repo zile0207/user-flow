@@ -19,7 +19,7 @@ result, or plain lines "<node id> <layer name>". get_children stops at 100 child
 import hashlib, json, os, re, sys
 from . import base
 
-VERSION = '0.5.0'
+VERSION = '0.6.0'
 CHUNK_MAX = 12000
 CLONE_MAX = 6          # live screen copies per paste chunk: each one returns a very large write_html response
 NAME_MAX = 50          # Paper truncates layer names here; keys must survive it

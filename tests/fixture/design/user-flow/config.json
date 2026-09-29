@@ -1,6 +1,6 @@
 {
   "project": "Fixture",
-  "plugin_version": "0.5.0",
+  "plugin_version": "0.6.0",
   "theme": {
     "accent": "#E05254",
     "font": "Switzer",

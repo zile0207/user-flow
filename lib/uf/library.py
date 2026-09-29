@@ -42,6 +42,8 @@ def parse(text, device_w=390):
         if not m:
             continue
         name, node, w, h = m.groups()
+        if name.startswith('master:'):          # the plugin's own layout frames (bands, gap frames), not screens
+            continue
         parts = [p.strip() for p in re.split(r' · | — ', name) if p.strip()]
         group = _group(parts[0] if parts else name)
         entry = {'node': node, 'name': name, 'ref': ref_of(name), 'group': group, 'title': ' · '.join(parts[1:]) or name, 'w': w, 'h': h}

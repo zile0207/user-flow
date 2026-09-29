@@ -41,10 +41,11 @@ Screens use the project's design tokens, never literal values. This skill binds 
 5. **Check:**
    - Read each frame again with `get_jsx` only (update_styles doesn't change the tree), run `bind-from-transcript`, and plan again. Frames with nothing left to bind are recorded as bound in `design/user-flow/bound.json`.
    - Screenshot two of the frames at scale 1. Tokens resolve to the values that were there, so nothing should move. A snap changes a value by a pixel or two.
-6. **Refresh painted copies** (only if a board already shows these frames):
+6. **Check the copies on a painted board:** read each card with `get_jsx(fileId <board file>, nodeId <card>)`, run `bind-from-transcript`, then `_uf.py bind-check <board file id> <card node…>`. It walks the copied screen inside each card (not the card's own label) and lists every value that should be a token. "all copies tagged" means done.
+7. **Refresh painted copies** (only if a board already shows these frames):
    - Boards that inline library frames: `bind-from-transcript` has already put the tagged JSX in the frame cache. Run `_uf.py stale <board> <frame…>`, then **sync-board**.
    - Boards that clone a Frames page: remake those copies (`references/project-and-paper.md` → Frames page), then `stale` and sync.
-7. **Report:**
+8. **Report:**
    - the frames bound (`bind-status`);
    - the values left literal and why (the keep list, or the user's choice);
    - any parts that were skipped;

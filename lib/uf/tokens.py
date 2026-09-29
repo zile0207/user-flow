@@ -376,3 +376,34 @@ def tokenize(html, tokens, left=None):
 
     html = re.sub(r'(style=)"([^"]*)"', style, html)
     return re.sub(r'\b(fill|stroke|stop-color)=(["\'])(#[0-9A-Fa-f]{3,8}|rgba?\([^)]*\))\2', attr, html)
+
+
+def copy_root(card):
+    """A board card's JSX → the copied screen inside it (card > Screen box > wrapper > frame), or the node itself."""
+    kids = _els(card)
+    if kids and kids[0]['style'].get('width') == '390px' and _els(kids[0]) and _els(_els(kids[0])[0]):
+        return _els(_els(kids[0])[0])[0]
+    return card
+
+
+def check(tokens, node, out=None):
+    """Walk a screen's JSX: every value that should be a token but is a literal → {(kind, value, prop): count}."""
+    out = {} if out is None else out
+    style = dict(node.get('style', {}))
+    is_text = node['tag'] not in ('svg',) and any(c['tag'] == '#text' for c in node.get('children', [])) and not _els(node)
+    if not is_text:
+        for k in TEXT_ONLY:
+            style.pop(k, None)
+    for a, prop in SVG_ATTR.items():
+        if a in node.get('attrs', {}):
+            style[prop] = node['attrs'][a]
+    w, h = _px(style.get('width', '')), _px(style.get('height', ''))
+    upd, left = tokens.bind({k: v for k, v in style.items() if k in KIND}, (w, h))
+    for p, css in upd.items():
+        out[('should be ' + css, str(style.get(p, '')), p)] = out.get(('should be ' + css, str(style.get(p, '')), p), 0) + 1
+    for kind, v in left:
+        out[('no token', v, kind)] = out.get(('no token', v, kind), 0) + 1
+    if not is_text:
+        for c in _els(node):
+            check(tokens, c, out)
+    return out

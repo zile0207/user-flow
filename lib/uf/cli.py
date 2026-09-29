@@ -32,6 +32,7 @@ bind-from-transcript <jsonl>            store every get_tree_summary and get_jsx
 bind-read <frame> <tree file> <jsx file> store one frame's two reads (the harness's saved results work as they are)
 bind-plan <batch> <frame…> | --board <b> the update_styles payloads that bind these frames to the design tokens
           [--file <file id>]            (out/bind/<batch>/NN.json), what stays literal, and which frames are fully bound
+bind-check <file id> <card node…>        pasted copies on a board: is every value in each copied screen a token?
 bind-status [<board>]                   how many library frames are bound to tokens; with a board, which of its aren't
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
@@ -662,8 +663,9 @@ def bind_from_transcript(P, path):
             name = str(x.get('name', ''))
             if x.get('type') == 'tool_use' and (name.endswith('get_tree_summary') or name.endswith('get_jsx')):
                 inp = x.get('input', {})
-                if inp.get('fileId') in (None, P.library_file_id) and inp.get('nodeId') and inp.get('format', 'inline-styles') == 'inline-styles':
-                    uses[x['id']] = (board_nid(inp['nodeId']), 'tree' if name.endswith('get_tree_summary') else 'jsx')
+                if inp.get('nodeId') and inp.get('format', 'inline-styles') == 'inline-styles':
+                    other = inp.get('fileId') not in (None, P.library_file_id)
+                    uses[x['id']] = (board_nid(inp['nodeId']), 'tree' if name.endswith('get_tree_summary') else 'jsx', inp.get('fileId') if other else None)
             elif x.get('type') == 'tool_result' and x.get('tool_use_id') in uses:
                 cont = x.get('content')
                 t_ = ''.join(y.get('text', '') for y in cont if isinstance(y, dict)) if isinstance(cont, list) else str(cont)
@@ -671,8 +673,12 @@ def bind_from_transcript(P, path):
                 if m and os.path.exists(m.group(1)):
                     from .tokens import result_text
                     t_ = result_text(open(m.group(1)).read())
-                node, kind = uses[x['tool_use_id']]
+                node, kind, other = uses[x['tool_use_id']]
                 if (kind == 'tree' and '"summary"' in t_) or (kind == 'jsx' and '(' in t_ and '<' in t_):
+                    if other:                             # another file (a journey board): kept apart, for bind-check
+                        open(os.path.join(_bind_dir(P, 'read', other), f'{node}.{kind}'), 'w').write(t_)
+                        n += 1
+                        continue
                     open(os.path.join(rd, f'{node}.{kind}'), 'w').write(t_)
                     if kind == 'jsx':                     # the newest read is also the frame cache copies are made from
                         open(os.path.join(_frames_dir(P), f'{node}.jsx'), 'w').write(t_[t_.find('}(') + 1:] if '}(' in t_ else t_[t_.find('('):])
@@ -733,6 +739,27 @@ def bind_plan(P, args):
         for i, ch in enumerate(chunks):
             print(f'  {os.path.relpath(os.path.join(out, f"{i:02d}.json"), P.root)}  ({len(json.dumps(ch)) // 1000} KB, {sum(len(e["nodeIds"]) for e in ch)} layers)')
         print('Then read each frame again with get_jsx only (the tree does not change), run bind-from-transcript, and plan again: 0 to bind means done.')
+
+
+def bind_check(P, args):
+    """Pasted copies on a board (another file): is every value in each copied screen a token?"""
+    from .tokens import Tokens, read_jsx, copy_root, check
+    fid = args.pop(0)
+    T = Tokens(_tokens_path(P))
+    d = os.path.join(P.root, 'out', 'bind', 'read', fid)
+    bad = 0
+    for node in [board_nid(a) for a in args]:
+        p = os.path.join(d, f'{node}.jsx')
+        if not os.path.exists(p):
+            print(f'{node}: not read yet: get_jsx(fileId "{fid}", nodeId "{node}", format "inline-styles"), then bind-from-transcript'); bad += 1; continue
+        found = check(T, copy_root(read_jsx(open(p).read())))
+        if not found:
+            print(f'{node}: every value is a token'); continue
+        bad += 1
+        print(f'{node}: {sum(found.values())} values are not tokens')
+        for (what, v, prop), n in sorted(found.items(), key=lambda x: -x[1]):
+            print(f'    {n:>3} × {prop}: {v}  ({what})')
+    print('all copies tagged' if not bad else f'{bad} of {len(args)} copies need attention')
 
 
 def bind_status(P, args):
@@ -820,6 +847,8 @@ def main(P, argv):
         bind_from_transcript(P, args[0])
     elif cmd == 'bind-plan':
         bind_plan(P, args)
+    elif cmd == 'bind-check':
+        bind_check(P, args)
     elif cmd == 'bind-status':
         bind_status(P, args)
     elif cmd == 'brief':

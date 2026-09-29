@@ -304,6 +304,10 @@ def test_promote_makes_library_frames_then_records_them():
     run(root, '_uf.py', 'promoted', 'promoted_j1', *nodes)
     g = project.load(root).gap('N1·4')
     assert g['state'] == 'promoted' and g['screen_nodes'] == nodes and g['node'] == nodes[0] and g['screen_ids'][0] == 'X1·1'
+    assert 'layer-name="X1·1 · ' in open(plan['made'][0]['file']).read()
+    run(root, '_uf.py', 'set-gap', 'N1·4', 'state=explored')                    # back again: promotion fields go
+    g = project.load(root).gap('N1·4')
+    assert 'screen_nodes' not in g and 'screen_ids' not in g
 
 
 def test_library_layout_is_incremental():

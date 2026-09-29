@@ -39,7 +39,7 @@ M.area('Onboarding', 'A1 · app/(auth), app/(onboarding)', [('card', '1CH7', 'A1
 if __name__ == '__main__':
     M.render('<Project> · every screen', '<n> areas · <date>', '<one sentence: what this map is>')   # board 'master'
 ```
-- **Library layout:** `specs/master.py` uses `LibraryLayout(P, cols, origin, per_row)` and `L.area(name, sub, groups, gaps, entries)`. Render it, then `_uf.py layout-ops master` prints every Paper call (moves in batches of 100, then the bands and gap frames to make). Re-running replaces the generated frames (names start `master:`) and moves the frames again.
+- **Library layout:** `specs/master.py` uses `LibraryLayout(P, cols, origin, per_row)` and `L.area(name, sub, groups, gaps, entries)`. Render it, then `_uf.py layout-ops master` prints every Paper call (moves in batches of 100, then the bands and gap frames to make). `layout-ops` prints only what changed since the last `_uf.py layout-commit master <tree>` (pass the page's tree, or just its `master:` lines as `<id> <name>`, so the generated frames keep their ids).
 - **Generated board (no library):** render, then paint per `references/sync.md` → First paint (commit straight after pasting). The artboard is named `Master map`, on `sources.paper.master_page` if the project has one, otherwise first on the maps page. Record it in `config.json` → `maps.master` as `{"spec": "specs/master.py", "artboard": "<id>"}`. Later changes go through **sync-board**.
 
 ## 4. Audit

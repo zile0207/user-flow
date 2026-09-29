@@ -33,9 +33,9 @@ if __name__ == '__main__':
 - Record the spec in `config.json` → `maps.promoted`: `{"journey": <n>, "spec": "specs/promoted_j<n>.py", "page": "<page id>"}`.
 
 ## 3. Update the maps
-- Re-index the library (`_uf.py library …`, `project-and-paper.md` → The library), so the new frames are in it.
+- `_uf.py promoted` already added the frames to `library.json`: no re-index needed.
 - Re-render and **sync-board** every map that shows the gap. The card becomes the promoted frame (a live copy) with its new id.
-- Re-run the master layout (`specs/master.py`, then `_uf.py layout-ops master`): the promoted frames take the dashed gap frame's place in their area, and only that area's changes are applied. `_uf.py layout-commit master` afterwards.
+- Re-run the master layout (`specs/master.py`, then `_uf.py layout-ops master`): the promoted frames take the dashed gap frame's place in their area, and only that area's changes are applied. Then `_uf.py layout-commit master <tree>`: pass the page's tree (a saved result, or only its `master:` lines as `<id> <name>`) so every generated frame keeps its id.
 - Mark the exploration `promoted` in `config.json` → `maps.explorations`.
 
 ## 4. Report

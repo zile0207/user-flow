@@ -40,7 +40,9 @@ class PromotedChapter:
         d = [d for r in SPEC['rounds'] for d in r['directions'] if d['letter'] == g['chosen']][0]
         self.items.append((gid, g, d))
 
-    def render(self, date=''):
+    def render(self, *args):
+        """render(date). The older render(story, date) still works; the story isn't used any more."""
+        date = args[-1] if args else ''
         cid = f'{self.prefix}{self.J}'
         name = f'promoted_j{self.J}'
         # stable ids: keep what the registry already has, give new screens the next numbers
@@ -53,6 +55,10 @@ class PromotedChapter:
                 ids.append(f'{cid}·{nxt}'); nxt += 1
             for sid, s in zip(ids, d['screens']):
                 html = s['html']
+                if 'layer-name="' in html[:html.index('>')]:          # the screen's root frame takes the stable id
+                    head, rest = html.split('>', 1)
+                    import re as _re
+                    html = _re.sub(r'layer-name="[^"]*"', f'layer-name="{sid} · {s["label"]}"', head, 1) + '>' + rest
                 made.append(dict(gap=gid, id=sid, name=f"{sid} · {s['label']}", width=base.PW, height=base.PH, html=html))
         out = os.path.join(self.P.root, 'out', name)
         md = os.path.join(out, 'made')

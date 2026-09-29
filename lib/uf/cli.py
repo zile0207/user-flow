@@ -16,7 +16,7 @@ find <words…> | --gap <gap id>          library screens that match (confirm ea
 unplaced <board> <group,group…>         library screens in those groups that the board doesn't show yet
 stale <board> <node id…> | all          copies of these frames get re-copied on the next sync (after the source changed)
 layout-ops <board>                      the Paper calls that lay the library page out as the master map (only what changed)
-layout-commit <board> [<ids file>]      record the layout; ids file: "<node id> <name>" per generated frame
+layout-commit <board> [<tree or ids>]  record the layout; give the page's tree (or "<id> <name>" lines) so generated frames have ids
 promoted <board> <node id…>             after promote-design's frames are made: record their ids and nodes
 tree <saved tool result> <out file>     turn a get_tree_summary result (even the harness's saved JSON) into "<id> <name>" lines
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
@@ -268,12 +268,9 @@ def layout_commit(P, name, ids_file=None):
     state, path = _layout_state(P, name)
     old = (state or {}).get('made', {})
     ids = {}
-    if ids_file:
-        for line in open(ids_file):
-            line = line.strip()
-            if line:
-                nid_, nm = line.split(' ', 1)
-                ids[nm.strip()] = nid_
+    if ids_file:                             # "<node id> <name>" lines, or the page's tree summary: only "master:" names count
+        rows, _ = board.Board.read_tree(ids_file)
+        ids = {nm.strip(): nid_ for nid_, nm in rows if nm.strip().startswith(plan['prefix'])}
     made = {}
     for m in plan['made']:
         node = ids.get(m['name']) or next((v for k, v in ids.items() if m['name'].startswith(k) or k.startswith(m['name'][:45])), None)
@@ -284,7 +281,8 @@ def layout_commit(P, name, ids_file=None):
     json.dump(st, open(path, 'w'), indent=1, ensure_ascii=False)
     missing = [n for n, v in made.items() if not v['node']]
     print(f"committed: boards/{name}_layout.json · {len(st['moves'])} frames · {len(made)} generated frames"
-          + (f" · no node id for {len(missing)} (the next change to them needs a lookup by name)" if missing else ''))
+          + (f" · no node id for {len(missing)}: when one of them changes, layout-ops can't delete it by id. "
+             f"Pass the page's tree (or \"<id> <name>\" lines for the {plan['prefix']} frames) to record them." if missing else ''))
 
 
 def promoted(P, name, nodes):
@@ -297,7 +295,19 @@ def promoted(P, name, nodes):
         P.set_gap(gid, state='promoted', chapter=plan['chapter'], screen_ids=[s for s, _ in pairs],
                   screen_nodes=[n for _, n in pairs], node=pairs[0][1])
         print(f"{gid}: promoted as {', '.join(s for s, _ in pairs)}")
-    print('Next: re-index the library, re-render and sync the maps that show these gaps, and re-run the master layout.')
+    from .library import Library, ref_of, _group
+    L = Library(P)
+    if L.data is not None:
+        have = {s['node'] for s in L.data['screens']}
+        for m, n in zip(plan['made'], nodes):
+            n = board_nid(n)
+            if n not in have:
+                L.data['screens'].append({'node': n, 'name': m['name'], 'ref': m['id'], 'group': _group(m['id']),
+                                          'title': m['name'].split(' · ', 1)[-1], 'w': str(m['width']), 'h': str(m['height'])})
+        with open(L.path, 'w') as f:
+            json.dump(L.data, f, indent=1, ensure_ascii=False); f.write('\n')
+        print(f"library.json: added {len(nodes)} frames (no re-index needed)")
+    print('Next: re-render and sync the maps that show these gaps, and re-run the master layout.')
 
 
 def _val(v):
@@ -327,7 +337,19 @@ def main(P, argv):
         print(P.add_gap(int(args[0]), args[1], args[2], args[3] if len(args) > 3 else ''))
     elif cmd == 'set-gap':
         P.gap(args[0])
-        P.set_gap(args[0], **{k: _val(v) for k, v in (a.split('=', 1) for a in args[1:])})
+        fields = {k: _val(v) for k, v in (a.split('=', 1) for a in args[1:])}
+        if fields.get('state') in ('todo', 'exploring', 'explored', 'later'):
+            gs = P.gaps()                      # moving back from promoted: drop what promotion added
+            for g in gs:
+                if g['id'] == args[0]:
+                    for k in ('chapter', 'screen_ids', 'screen_nodes'):
+                        g.pop(k, None)
+            P.save_gaps(gs)
+            for e in P.cfg.get('maps', {}).get('explorations', []):
+                if e.get('gap') == args[0] and e.get('state') == 'promoted':
+                    e['state'] = 'confirmed'
+            P.save_cfg()
+        P.set_gap(args[0], **fields)
         print(json.dumps(P.gap(args[0]), ensure_ascii=False))
     elif cmd == 'add-question':
         blocks = _opt(args, '--blocks'); about = _opt(args, '--about', '')

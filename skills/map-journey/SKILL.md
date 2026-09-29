@@ -21,6 +21,7 @@ A journey map is one area of the app, drawn as a full flowchart:
 - Find the persona's path through this area in the source (story, chapters, dates). That path is row 1.
 
 ## 2. Inventory (write it down before drawing)
+- **Start from the screen index:** `_uf.py screens --area "<area>"` (or `--group MON`, `--find <words>`) says what every library frame is (its stop, whether it's a full screen or top-only, where it's used) before you fetch or screenshot anything. Screenshot only the frames you're choosing between.
 - Read every source screen in scope: the story chapters on the screens page for the persona's path, and **the library** for every screen of this area (`_uf.py find`, `_uf.py unplaced`, screenshots). Record the library groups this journey covers in `config.json` → the journey's `library_groups`.
 - List the nodes (screens, decisions, background work, outside steps, entries, exits) and the edges, each with what causes it.
 - Run `references/coverage-checklist.md` against the list. Anything missing is searched in the library first (`_uf.py find <words>`); only what the library doesn't have becomes a gap. An existing gap from the registry (`_uf.py gaps`) is reused, never duplicated.
@@ -31,6 +32,8 @@ A journey map is one area of the app, drawn as a full flowchart:
 
 ## 3. Spec
 - Cards name the real frames by node id (`node='PY1-0'`), taken from the library where the screen exists there. Never export or show images of screens.
+- **Top-only frames** (the index says "top only": the top's states, whose sheet is empty) need a sheet: `m.card(..., sheet='<node>')` names the library frame whose sheet the persona is looking at in that moment (the tab from the story: Explore, Links, Boards, Plans or Profile). The card shows the top over that real sheet.
+- **Library in another file** (`sources.paper.library_file_id` differs from `file_id`): cards are copies of the frames' real layers. Render once: it lists the frames to fetch (`_uf.py frames j<no>`). Fetch each with `get_jsx(fileId = library file, nodeId, format "inline-styles")`, then store them: in Claude Code `_uf.py frames-from-transcript <your session's .jsonl>` (the newest file in `~/.claude/projects/<this repo>/`), no retyping; otherwise `_uf.py frames-save`. Render again: no markers left.
 - Write `specs/j<no>.py`, following the examples:
   - `from _uf import P`, `from uf.jmap import Map, row_y`, `m = Map(<no>, P)`
   - Rows via `row_y(n)`, nodes via `m.seq(...)`, or explicit x following the spacing rules.

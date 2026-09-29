@@ -38,7 +38,7 @@ def frame_key(node, sheet=None):
 NOSCALE = ('<!--uf:noscale-->', '<!--/uf:noscale-->')
 
 
-def _frame_html(node, sheet=None):
+def _frame_html(node, sheet=None, name=None):
     import os
     from . import jsx
     def load(n):
@@ -52,11 +52,11 @@ def _frame_html(node, sheet=None):
     if top is None or (sheet and fill is None):
         return None
     tree = jsx.composite(top, fill) if fill is not None else top
-    name = FRAME_NAMES.get(nid(node), nid(node)) + (f' + sheet of {FRAME_NAMES.get(nid(sheet), nid(sheet))}' if sheet else '')
+    name = name or FRAME_NAMES.get(nid(node), nid(node)) + (f' + sheet of {FRAME_NAMES.get(nid(sheet), nid(sheet))}' if sheet else '')
     return jsx.to_html(tree, size=(PW, None), layer=name)
 
 
-def screen(node, w, radius=10, layer='Screen', sheet=None):
+def screen(node, w, radius=10, layer='Screen', sheet=None, name=None):
     """A real screen on a board: a live copy of the Paper frame `node`, in a box w wide (in the board's spec units).
     Never an image. Boards are scaled (Board(scale=…)) so this box comes out at the device width: the zoom then
     cancels out and is dropped, and the frame sits at its real size, 1:1. The box clips frames taller than the device."""
@@ -74,7 +74,7 @@ def screen(node, w, radius=10, layer='Screen', sheet=None):
             return box + f'<x-paper-clone node-id="{LOCAL[key]}" style="position:absolute;left:0px;top:0px;zoom:{z:.6f}" /></div>'
         LOCAL_NEEDED[key] = (nid(node), nid(sheet) if sheet else None)
         return box + f'<div style="padding:8px;font-size:10px;line-height:13px;color:#B7791F">{key} not on the Frames page yet</div></div>'
-    html = _frame_html(node, sheet)
+    html = _frame_html(node, sheet, name)       # name: the copy's layer name (a board names it by its own step)
     if html is None:            # not fetched yet: a visible marker, and the render reports what to fetch
         return box + f'<div style="padding:8px;font-size:10px;line-height:13px;color:#B7791F">frame {nid(node)} not fetched</div></div>'
     # the frame keeps its real size: the board's scale must not touch it, and the box comes out at the device width

@@ -161,7 +161,7 @@ class Map:
         if k == 'card':
             ref_col = base.ACCENT if d['jamie'] else MUTED
             return (f'<div layer-name="{d["ref"]} · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
-                    + base.screen(d['node'], 180, sheet=d.get('sheet')) +
+                    + base.screen(d['node'], 180, sheet=d.get('sheet'), name=f"{d['ref']} · {d['title']}") +
                     f'<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">'
                     + t(d['ref'], 11, 14, 700, ref_col, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK) + t(d['note'], 12, 16, 500, MUTED) + '</div></div>')
         if k == 'gap':

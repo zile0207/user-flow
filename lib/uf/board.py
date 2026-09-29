@@ -101,6 +101,15 @@ class Board:
         self.P = project
         self.name = name
         self.scale = scale
+        # how screens get on this board: the board's own maps entry (`screens`) wins over sources.paper.screens,
+        # so boards painted before a project switched to placed screens keep their inlined copies
+        paper = project.cfg.get('sources', {}).get('paper', {})
+        entry = next((e for g in ('journeys', 'flows', 'states', 'explorations')
+                      for e in (project.cfg.get('maps', {}).get(g) or []) if isinstance(e, dict)
+                      and str(e.get('spec', '')).endswith(f'/{name}.py')), {})
+        mode = entry.get('screens') or paper.get('screens')
+        base.PLACED_MODE = bool(base.CROSS_FILE and mode == 'placed')
+        base.LOCAL_MODE = bool(base.CROSS_FILE and not base.PLACED_MODE and paper.get('frames_page'))
         self.keys = []
         self.html = {}       # stamped, as painted
         self.body = {}       # unstamped, for hashing

@@ -403,11 +403,11 @@ def test_frames_page_types_each_screen_once_then_boards_clone_it():
     assert 'not on the Frames page yet' in out, out
     assert 'frames to fetch' in run(root, '_uf.py', 'frames-local', 'journey')
     fd = os.path.join(root, 'frames'); os.makedirs(fd, exist_ok=True)
-    for n in ('S1-0', 'S2-0'):
+    for n in ('S1-0', 'S2-0', 'X12A-0'):
         open(os.path.join(fd, f'{n}.jsx'), 'w').write("(<div style={{ backgroundColor: '#000000' }}><div style={{ fontSize: '19px' }}>" + n + "</div></div>)")
     listing = run(root, '_uf.py', 'frames-local', 'journey')
     assert 'copy:S1-0 · ' in listing and 'copy:S2-0 · ' in listing and 'create_artboard' in listing, listing
-    open(os.path.join(root, 'out', 'ids.txt'), 'w').write('L1-0 copy:S1-0 · A·1\nL2-0 copy:S2-0 · A·2\n')
+    open(os.path.join(root, 'out', 'ids.txt'), 'w').write('L1-0 copy:S1-0 · A·1\nL2-0 copy:S2-0 · A·2\nL3-0 copy:X12A-0 · N1·2\n')
     run(root, '_uf.py', 'frames-local-commit', os.path.join(root, 'out', 'ids.txt'))
     out = run(root, 'journey.py')
     assert 'not on the Frames page' not in out, out

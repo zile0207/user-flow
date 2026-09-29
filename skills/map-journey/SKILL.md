@@ -33,7 +33,11 @@ A journey map is one area of the app, drawn as a full flowchart:
 ## 3. Spec
 - Cards name the real frames by node id (`node='PY1-0'`), taken from the library where the screen exists there. Never export or show images of screens.
 - **Top-only frames** (the index says "top only": the top's states, whose sheet is empty) need a sheet: `m.card(..., sheet='<node>')` names the library frame whose sheet the persona is looking at in that moment (the tab from the story: Explore, Links, Boards, Plans or Profile). The card shows the top over that real sheet.
-- **Library in another file** (`sources.paper.library_file_id` differs from `file_id`): cards are copies of the frames' real layers. Render once: it lists the frames to fetch (`_uf.py frames j<no>`). Fetch each with `get_jsx(fileId = library file, nodeId, format "inline-styles")`, then store them: in Claude Code `_uf.py frames-from-transcript <your session's .jsonl>` (the newest file in `~/.claude/projects/<this repo>/`), no retyping; otherwise `_uf.py frames-save`. Render again: no markers left.
+- **Library in another file** (`sources.paper.library_file_id` differs from `file_id`): the maps file keeps one real copy of each screen on its **Frames page** (`sources.paper.frames_page`), typed once; cards are live copies of those, so boards stay cheap to paint and sync. The order, fast:
+  1. Render. It lists the screens not on the Frames page yet.
+  2. `_uf.py frames-local j<no>`. If it lists frames to fetch: `get_jsx(fileId = library file, nodeId, format "inline-styles")` for each (a subagent can do them all), then `_uf.py frames-from-transcript <session .jsonl>` (in Claude Code: the newest .jsonl in `~/.claude/projects/<this repo>/`, or the subagent's), no retyping; otherwise `_uf.py frames-save`. Run `frames-local` again.
+  3. Make the listed copies: split the list across up to 5 paste subagents at once (model haiku), each doing create_artboard + write_html per line; then one update_styles for their positions; then `_uf.py frames-local-commit <Frames page tree>` (only the `copy:` lines are needed).
+  4. Render again: no markers left. Paint the board (`sync.md` → First paint: screen chunks in parallel, the rest in order).
 - Write `specs/j<no>.py`, following the examples:
   - `from _uf import P`, `from uf.jmap import Map, row_y`, `m = Map(<no>, P)`
   - Rows via `row_y(n)`, nodes via `m.seq(...)`, or explicit x following the spacing rules.

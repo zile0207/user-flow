@@ -18,6 +18,21 @@ def _words(s):
     return [w for w in re.findall(r"[a-z0-9]+", s.lower()) if w not in STOP and len(w) > 1]
 
 
+def _group(head):
+    """The family a screen belongs to: '5.4' stays '5.4', 'DO10' → 'DO', 'MON b' → 'MON', 'N1b' → 'N', 'GATE a' → 'GATE'."""
+    tok = head.split()[0] if head.split() else head
+    m = re.match(r'^([A-Z]+)\d+[a-z]?$', tok)
+    return m.group(1) if m else tok
+
+
+def ref_of(name):
+    """A short screen id from a frame name: '5.4 · 7 · The video is private' → '5.4·7', 'DO4 · …' → 'DO4', 'MON b · Page' → 'MON b'."""
+    parts = [p.strip() for p in re.split(r' · | — ', name) if p.strip()]
+    if len(parts) > 1 and re.match(r'^\d+(\.\d+)?[a-z]?$', parts[0]) and re.match(r'^([A-Z]?\d+[a-z]?|[A-Z])$', parts[1]):
+        return f'{parts[0]}·{parts[1]}'
+    return parts[0] if parts else name
+
+
 def parse(text, device_w=390):
     try:
         data = json.loads(text)
@@ -31,8 +46,8 @@ def parse(text, device_w=390):
             continue
         name, node, w, h = m.groups()
         parts = [p.strip() for p in re.split(r' · | — ', name) if p.strip()]
-        group = parts[0] if parts else name
-        entry = {'node': node, 'name': name, 'group': group, 'title': ' · '.join(parts[1:]) or name}
+        group = _group(parts[0] if parts else name)
+        entry = {'node': node, 'name': name, 'ref': ref_of(name), 'group': group, 'title': ' · '.join(parts[1:]) or name}
         try:
             is_screen = float(w) == device_w and (h == '?' or float(h) > 400)
         except ValueError:

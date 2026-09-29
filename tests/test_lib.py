@@ -249,6 +249,9 @@ def test_library_index_find_and_found_gaps():
     out = run(root, '_uf.py', 'find', 'video', 'private')
     assert out.strip().startswith('ITS-0'), out
     assert 'ITS-0' in run(root, '_uf.py', 'unplaced', 'journey', '5.4')
+    assert 'PY1-0' in run(root, '_uf.py', 'unplaced', 'journey', 'DO')
+    from uf.library import ref_of
+    assert ref_of('5.4 · 7 · The video is private · Decided') == '5.4·7' and ref_of('DO4 · Tap') == 'DO4' and ref_of('MON b · Page') == 'MON b'
     run(root, '_uf.py', 'set-gap', 'N1·1', 'state=found', 'node=1C5N-0', 'ref=B5')
     run(root, 'journey.py')
     html = ''.join(open(os.path.join(root, 'out', 'journey', 'full', f)).read() for f in sorted(os.listdir(os.path.join(root, 'out', 'journey', 'full'))))

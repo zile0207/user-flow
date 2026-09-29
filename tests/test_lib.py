@@ -257,6 +257,10 @@ def test_library_index_find_and_found_gaps():
     html = ''.join(open(os.path.join(root, 'out', 'journey', 'full', f)).read() for f in sorted(os.listdir(os.path.join(root, 'out', 'journey', 'full'))))
     assert 'node-id="1C5N-0"' in html and 'B5 · WAS N1·1' in html
     assert '1 found in the library' in run(root, '_uf.py', 'status')
+    import sys as _s; _s.path.insert(0, os.path.join(root, 'specs'))
+    from uf import project, master
+    M = master.MasterMap(project.load(root))
+    assert M.library_area('Links', '5.4', ['5.4'], gaps=['N1·3']) == 1 and M.areas[0]['items'][0][1] == 'ITS-0'
 
 
 def test_stale_recopies_on_next_sync():

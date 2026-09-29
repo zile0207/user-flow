@@ -32,7 +32,7 @@ Rules across levels:
 | `pill(..., 'entry')` | A grey dashed pill | Comes from another step or map | "From 8 · Skip" |
 | `pill(..., 'jump')` | A light pill, ↩ | Loops back to a far node | Instead of an arrow across the map |
 
-**Master map items:** `('card', node, ref, title)` and `('gap', gid)`, grouped in `area(name, sub, items, entries)`. Areas are laid out in rows in the order you add them (`MasterMap(P, columns=5)`), so add them in the order a person meets them. Questions filed under map `M` (QM·n) render in a panel at the bottom.
+**Master map items:** `('card', node, ref, title)` and `('gap', gid)`, grouped in `area(name, sub, items, entries)`. Areas are laid out in rows in the order you add them (`MasterMap(P, columns=5)`), so add them in the order a person meets them. Questions filed under map `M` (QM·n) render in a panel at the bottom. `M.library_area(name, sub, groups, gaps)` fills an area straight from `library.json`, so the master map follows the library when it's re-indexed.
 
 **State map rows:** `state(key, name, priority, when, until, variants, gives_way_to, note, question)`.
 - `variants` are up to 4 of `('card', node, ref, label)` or `('gap', gid, label)`: the sizes or forms the state takes, e.g. widget, half, page.

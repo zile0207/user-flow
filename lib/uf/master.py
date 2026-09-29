@@ -26,6 +26,20 @@ class MasterMap:
         """items: ('card', node, ref, title) for a designed screen (node = the real frame's Paper id) · ('gap', gid)."""
         self.areas.append(dict(name=name, sub=sub, items=items, entries=entries))
 
+    def library_area(self, name, sub, groups, gaps=(), entries='', match=None):
+        """An area filled from the library index (library.json): every screen whose group is in `groups`
+        (and whose name contains `match`, if given), in natural order, then the registry gaps."""
+        import json, os, re
+        path = os.path.join(self.P.root, 'library.json')
+        assert os.path.exists(path), 'no library.json: run `_uf.py library` first'
+        screens = [x for x in json.load(open(path))['screens'] if x['group'] in groups and (not match or match in x['name'])]
+        nat = lambda x: [int(p) if p.isdigit() else p for p in re.split(r'(\d+)', x['name'])]
+        order = {g: i for i, g in enumerate(groups)}
+        screens.sort(key=lambda x: (order[x['group']], nat(x)))
+        items = [('card', x['node'], x['ref'], x['title'][:60]) for x in screens] + [('gap', g) for g in gaps]
+        self.area(name, sub, items, entries)
+        return len(screens)
+
     # ---------------- pieces
     def _card(self, node, ref, title):
         return (f'<div layer-name="{ref} · {title}" style="width:{CARD_W}px;height:{CARD_H}px;background:#FFFFFF;border:1px solid {LINE};border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box">'
@@ -48,20 +62,33 @@ class MasterMap:
 
     def _area_h(self, a):
         rows = max(1, math.ceil(len(a['items']) / COLS))
-        return 24 + 62 + (22 if a['entries'] else 0) + rows * CARD_H + (rows - 1) * GAP + 24
+        return self._head_h(a) + rows * CARD_H + (rows - 1) * GAP + 24
 
-    def _area_html(self, a, x, y):
-        cells = ''.join(self._card(*it[1:]) if it[0] == 'card' else self._gap(it[1]) for it in a['items'])
+    @staticmethod
+    def _head_h(a):
+        # padding 24 · title 27 + 2 + sub 16 · gap 12 · entries 16 + gap 12
+        return 24 + 45 + 12 + (28 if a['entries'] else 0)
+
+    def _area_parts(self, a, x, y):
+        """An area as keyed parts: its panel and header, then one element per row of cards, so a paste chunk
+        never carries a whole area of live screen copies, and a change only touches its row."""
         n_card = sum(1 for it in a['items'] if it[0] == 'card')
         n_card += sum(1 for it in a['items'] if it[0] == 'gap' and self.P.gap(it[1]).get('state') in ('explored', 'promoted', 'found'))
         n_gap = sum(1 for it in a['items'] if it[0] == 'gap' and self.P.gap(it[1]).get('state', 'todo') in ('todo', 'exploring'))
         count = f'{n_card} designed' + (f' · {n_gap} to design' if n_gap else '')
-        return (f'<div layer-name="Area · {a["name"]}" style="position:absolute;left:{x}px;top:{y}px;width:{AREA_W}px;height:{self._area_h(a)}px;background:#F6F7F7;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
+        head = (f'<div layer-name="Area · {a["name"]}" style="position:absolute;left:{x}px;top:{y}px;width:{AREA_W}px;height:{self._area_h(a)}px;background:#F6F7F7;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
                 f'<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">'
                 + '<div style="display:flex;flex-direction:column;gap:2px">' + t(a['name'], 22, 27, 700, INK, 'letter-spacing:-0.015em;') + t(a['sub'], 12, 16, 500, MUTED) + '</div>'
                 + t(count, 12, 16, 700, AMBER if n_gap else MUTED, 'white-space:nowrap;') + '</div>'
-                + (t('Entry points: ' + a['entries'], 12, 16, 500, MUTED) if a['entries'] else '')
-                + f'<div style="display:flex;flex-wrap:wrap;gap:{GAP}px">{cells}</div></div>')
+                + (t('Entry points: ' + a['entries'], 12, 16, 500, MUTED) if a['entries'] else '') + '</div>')
+        parts = [('', head)]
+        top = y + self._head_h(a)
+        items = a['items']
+        for r in range(0, len(items), COLS):
+            cells = ''.join(self._card(*it[1:]) if it[0] == 'card' else self._gap(it[1]) for it in items[r:r + COLS])
+            ry = top + (r // COLS) * (CARD_H + GAP)
+            parts.append((f'r{r // COLS + 1}', f'<div layer-name="{a["name"]} · row {r // COLS + 1}" style="position:absolute;left:{x + 24}px;top:{ry}px;display:flex;gap:{GAP}px">{cells}</div>'))
+        return parts
 
     def render(self, title, right, story, name='master'):
         W = 40 * 2 + self.columns * AREA_W + (self.columns - 1) * COL_GAP
@@ -99,7 +126,9 @@ class MasterMap:
         B.add('coverage', f'<div layer-name="Coverage" style="position:absolute;left:{W-700}px;top:160px;width:660px;display:flex;justify-content:flex-end;gap:36px">'
               + ''.join('<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end">' + t(n, 32, 36, 700, c, 'letter-spacing:-0.02em;') + t(l, 12, 16, 500, MUTED, 'white-space:nowrap;') + '</div>' for n, l, c in stats) + '</div>')
         for a, x, y in placed:
-            B.add('area' + ''.join(ch for ch in a['name'].title() if ch.isalnum()), self._area_html(a, x, y))
+            base_key = 'area' + ''.join(ch for ch in a['name'].title() if ch.isalnum())
+            for suffix, html in self._area_parts(a, x, y):
+                B.add(base_key + suffix, html)
         if qs:                                     # questions the audit raised about the whole app (QM·n)
             from .jmap import panel
             B.add('panel', panel(*self.P.panel('M', 40, bottom, min(W - 80, 2400))))

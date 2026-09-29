@@ -394,6 +394,30 @@ def test_cross_file_frames_are_real_layers_at_real_size():
     assert re.search(r'layer-name="Screen" style="position:relative;width:390px;height:844px', html)
 
 
+def test_frames_page_types_each_screen_once_then_boards_clone_it():
+    root = fresh()
+    cfg = json.load(open(os.path.join(root, 'config.json')))
+    cfg['sources']['paper'].update(library_file_id='LIBFILE', frames_page='p-9-0')
+    json.dump(cfg, open(os.path.join(root, 'config.json'), 'w'))
+    out = run(root, 'journey.py')
+    assert 'not on the Frames page yet' in out, out
+    assert 'frames to fetch' in run(root, '_uf.py', 'frames-local', 'journey')
+    fd = os.path.join(root, 'frames'); os.makedirs(fd, exist_ok=True)
+    for n in ('S1-0', 'S2-0'):
+        open(os.path.join(fd, f'{n}.jsx'), 'w').write("(<div style={{ backgroundColor: '#000000' }}><div style={{ fontSize: '19px' }}>" + n + "</div></div>)")
+    listing = run(root, '_uf.py', 'frames-local', 'journey')
+    assert 'copy:S1-0 · ' in listing and 'copy:S2-0 · ' in listing and 'create_artboard' in listing, listing
+    open(os.path.join(root, 'out', 'ids.txt'), 'w').write('L1-0 copy:S1-0 · A·1\nL2-0 copy:S2-0 · A·2\n')
+    run(root, '_uf.py', 'frames-local-commit', os.path.join(root, 'out', 'ids.txt'))
+    out = run(root, 'journey.py')
+    assert 'not on the Frames page' not in out, out
+    html = ''.join(open(os.path.join(root, 'out', 'journey', 'full', f)).read() for f in sorted(os.listdir(os.path.join(root, 'out', 'journey', 'full'))) if f.endswith('.html'))
+    assert 'node-id="L1-0"' in html and 'node-id="L2-0"' in html and 'zoom' not in html
+    paint = json.load(open(os.path.join(root, 'out', 'journey', 'full', 'paint.json')))
+    first = open(os.path.join(root, 'out', 'journey', 'full', paint['parallel'][0])).read()
+    assert paint['parallel'] and paint['serial'] and 'layer-name="Screen"' in first
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

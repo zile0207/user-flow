@@ -25,6 +25,8 @@ screens [--area X] [--group MON] [--find words] [--top-only]
 frames <board>                          frames a board needs from the library file that aren't fetched yet (cross-file)
 frames-save <node id> <file>            store one get_jsx(inline-styles) result in the frame cache
 frames-from-transcript <jsonl>          store every get_jsx result found in a Claude Code session transcript
+frames-local <board>                    the copies to make on the Frames page for a board (each screen typed once)
+frames-local-commit <tree or id lines>  record the Frames page copies (names start "copy:"), so boards clone them
 tree <saved tool result> <out file>     turn a get_tree_summary result (even the harness's saved JSON) into "<id> <name>" lines
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
@@ -513,6 +515,63 @@ def frames_from_transcript(P, path):
     print(f'{n} frames stored in {os.path.relpath(_frames_dir(P), P.root)}/')
 
 
+def _local_path(P):
+    return os.path.join(P.root, 'frames_local.json')
+
+
+def frames_local(P, board_name):
+    from . import base as B
+    need_p = os.path.join(P.root, 'out', board_name, 'local_needed.json')
+    if not os.path.exists(need_p):
+        print(f'{board_name}: every screen it shows is on the Frames page (or render it first).'); return
+    need = json.load(open(need_p))
+    fd = _frames_dir(P)
+    missing = sorted({n for pair in need.values() for n in pair if n and not os.path.exists(os.path.join(fd, f'{n}.jsx'))})
+    if missing:
+        print(f"{len(missing)} frames to fetch from the library file first: get_jsx(fileId \"{P.library_file_id}\", nodeId, "
+              f"format \"inline-styles\"), then `_uf.py frames-from-transcript <session .jsonl>` (or frames-save).")
+        print('Nodes: ' + ' '.join(missing)); return
+    local = json.load(open(_local_path(P))) if os.path.exists(_local_path(P)) else {}
+    page = P.cfg['sources']['paper'].get('frames_page')
+    out = os.path.join(P.root, 'out', 'frames_local')
+    os.makedirs(out, exist_ok=True)
+    for f in os.listdir(out):
+        os.remove(os.path.join(out, f))
+    lib = {s['node']: s for s in json.load(open(os.path.join(P.root, 'library.json')))['screens']} if os.path.exists(os.path.join(P.root, 'library.json')) else {}
+    start = len(local)
+    rows = []
+    for j, (key, (node, sheet)) in enumerate(sorted(need.items())):
+        html = B._frame_html(node, sheet)
+        name = f"copy:{key} · {lib.get(node, {}).get('name', node)}" + (f" + sheet of {lib.get(sheet, {}).get('ref', sheet)}" if sheet else '')
+        h = lib.get(node, {}).get('h', '844')
+        h = int(float(h)) if h not in ('?', None, '') else 844
+        i = start + j
+        left, top = (i % 20) * 430, (i // 20) * 3300
+        f = os.path.join(out, f'{j:02d}.html'); open(f, 'w').write(html)
+        rows.append((name, h, left, top, f))
+    print(f"{board_name}: {len(rows)} copies to make on the Frames page ({page}). Each is a real copy of a Master frame, typed once;")
+    print("boards then show them as same-file live copies. Split the list across parallel paste subagents (model haiku), 4 to 6 at once:")
+    print(f"for each line: create_artboard(fileId, pageId \"{page}\", name, width 390px, height, backgroundColor #FFFFFF), then write_html(insert-children, that artboard, the file, byte for byte).")
+    for r in rows:
+        print(f"  {r[0]} | 390 x {r[1]} | left {r[2]} top {r[3]} | {r[4]}")
+    print("Then one update_styles with each new artboard's left/top, and `_uf.py frames-local-commit <tree of the Frames page, or \"<id> <name>\" lines>`.")
+
+
+def frames_local_commit(P, path):
+    rows, _ = board.Board.read_tree(path)
+    local = json.load(open(_local_path(P))) if os.path.exists(_local_path(P)) else {}
+    n = 0
+    for nid_, name in rows:
+        name = name.strip()
+        if name.startswith('copy:'):
+            key = name[5:].split(' · ')[0].strip()
+            local[key] = {'id': nid_, 'name': name}
+            n += 1
+    with open(_local_path(P), 'w') as f:
+        json.dump(local, f, indent=1, ensure_ascii=False); f.write('\n')
+    print(f'frames_local.json: {n} copies recorded ({len(local)} in all). Render the board again: its cards are now live copies.')
+
+
 def _val(v):
     try:
         return json.loads(v)
@@ -575,6 +634,10 @@ def main(P, argv):
         frames(P, args[0])
     elif cmd == 'frames-save':
         frames_save(P, args[0], args[1])
+    elif cmd == 'frames-local':
+        frames_local(P, args[0])
+    elif cmd == 'frames-local-commit':
+        frames_local_commit(P, args[0])
     elif cmd == 'frames-from-transcript':
         frames_from_transcript(P, args[0])
     elif cmd == 'brief':

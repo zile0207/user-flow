@@ -27,6 +27,13 @@ CROSS_FILE = False
 FRAMES_DIR = None
 FRAME_NAMES = {}          # node → frame name (from library.json), for the copy's layer name
 MISSING = set()           # frames a render needed but the cache doesn't have yet
+LOCAL_MODE = False        # the maps file has a Frames page: one real copy of each screen, typed once
+LOCAL = {}                # key ('<node>' or '<node>+<sheet node>') → the copy's node id on the Frames page
+LOCAL_NEEDED = {}         # key → (node, sheet) a render needed that isn't on the Frames page yet
+
+
+def frame_key(node, sheet=None):
+    return nid(node) + (f'+{nid(sheet)}' if sheet else '')
 NOSCALE = ('<!--uf:noscale-->', '<!--/uf:noscale-->')
 
 
@@ -59,6 +66,12 @@ def screen(node, w, radius=10, layer='Screen', sheet=None):
            f'border-radius:{radius}px;background:#FFFFFF">')
     if not CROSS_FILE and not sheet:
         return box + f'<x-paper-clone node-id="{nid(node)}" style="position:absolute;left:0px;top:0px;zoom:{z:.6f}" /></div>'
+    if LOCAL_MODE:              # a live copy of this screen's copy on the Frames page (same file: cheap)
+        key = frame_key(node, sheet)
+        if key in LOCAL:
+            return box + f'<x-paper-clone node-id="{LOCAL[key]}" style="position:absolute;left:0px;top:0px;zoom:{z:.6f}" /></div>'
+        LOCAL_NEEDED[key] = (nid(node), nid(sheet) if sheet else None)
+        return box + f'<div style="padding:8px;font-size:10px;line-height:13px;color:#B7791F">{key} not on the Frames page yet</div></div>'
     html = _frame_html(node, sheet)
     if html is None:            # not fetched yet: a visible marker, and the render reports what to fetch
         return box + f'<div style="padding:8px;font-size:10px;line-height:13px;color:#B7791F">frame {nid(node)} not fetched</div></div>'

@@ -163,6 +163,12 @@ class Board:
 
     def emit(self, W, H, page='maps'):
         W, H = round(W * self.scale), round(H * self.scale)
+        for f in ('local_needed.json', 'frames_needed.txt'):
+            if os.path.exists(os.path.join(self._dir(), f)):
+                os.remove(os.path.join(self._dir(), f))
+        if base.LOCAL_NEEDED:
+            json.dump({k: list(v) for k, v in base.LOCAL_NEEDED.items()}, open(os.path.join(self._dir(), 'local_needed.json'), 'w'), indent=1)
+            print(f'  {len(base.LOCAL_NEEDED)} screens are not on the Frames page yet (they show as markers): `_uf.py frames-local {self.name}`')
         if base.MISSING:
             need = os.path.join(self._dir(), 'frames_needed.txt')
             open(need, 'w').write(''.join(f'{n}\n' for n in sorted(base.MISSING)))
@@ -171,9 +177,17 @@ class Board:
         for d in (full, sync):
             for f in os.listdir(d):
                 os.remove(os.path.join(d, f))
-        chunks = self._chunks(self.keys)
+        # Elements that show a screen go first, in chunks that can be pasted in parallel (they never overlap each
+        # other); everything else (arrows, labels, panels) follows in order, so it sits on top.
+        screens = [k for k in self.keys if 'layer-name="Screen"' in self.html[k]]
+        rest = [k for k in self.keys if k not in screens]
+        par, ser = self._chunks(screens), self._chunks(rest)
+        chunks = par + ser
         for i, c in enumerate(chunks):
             open(os.path.join(full, f'{i:02d}.html'), 'w').write(c)
+        json.dump({'parallel': [f'{i:02d}.html' for i in range(len(par))],
+                   'serial': [f'{i:02d}.html' for i in range(len(par), len(chunks))]},
+                  open(os.path.join(full, 'paint.json'), 'w'), indent=1)
         els = []
         for k in self.keys:
             b = self._rel(self.body[k]); pos = position(b)

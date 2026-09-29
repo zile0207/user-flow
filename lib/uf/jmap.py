@@ -170,7 +170,7 @@ class Map:
                 lib = self.P.cfg.get('sources', {}).get('paper', {}).get('library_page_name', 'the library page')
                 ref = d.get('ref') or g
                 return (f'<div layer-name="{ref} · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
-                        + base.screen(d['node'], 180) +
+                        + base.screen(d['node'], 180, name=f"{ref} · {d['title']}") +
                         '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">' + t(f'{ref} · WAS {g}', 11, 14, 700, MUTED, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK)
                         + t(f'Already designed, on {lib}.', 12, 16, 500, MUTED) + '</div></div>')
             if st == 'promoted':

@@ -33,6 +33,7 @@
               "screens_page": "p-2-0", "screens_page_name": "User Flow",
               "library_page": "p-1-0", "library_page_name": "Confirmed Screens From Exploration",
               "promote_page": "p-1-0",
+              "master_page": "p-5-0", "master_page_name": "Master Map",
               "maps_page": "p-3-0", "maps_page_name": "User Journey",
               "explore_page": "p-4-0", "explore_page_name": "Exploration",
               "legacy_file_ids": ["..."]},
@@ -53,6 +54,7 @@
 ```
 - `legacy_file_ids`: files no skill may write to. Check every Paper write's file id against this list.
 - `library_page`: the page that holds every confirmed screen of the app, however messy (see The library). `screens_page` is the curated story, if there is one.
+- `master_page` (optional): a page of its own for the master map; otherwise it goes first on the maps page.
 - `promote_page`: where promote-design puts confirmed explorations. Defaults to the library page, else the screens page.
 
 ## The registries: gaps and questions

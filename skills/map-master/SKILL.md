@@ -37,7 +37,7 @@ M.area('Onboarding', 'A1 · app/(auth), app/(onboarding)', [('card', '1CH7', 'A1
 if __name__ == '__main__':
     M.render('<Project> · every screen', '<n> areas · <date>', '<one sentence: what this map is>')   # board 'master'
 ```
-- Render, then paint per `references/sync.md` → First paint (commit straight after pasting). The artboard is named `Master map`, placed first on the maps page. Record it in `config.json` → `maps.master` as `{"spec": "specs/master.py", "artboard": "<id>"}`. Later changes go through **sync-board**.
+- Render, then paint per `references/sync.md` → First paint (commit straight after pasting). The artboard is named `Master map`, on `sources.paper.master_page` if the project has one, otherwise first on the maps page. Record it in `config.json` → `maps.master` as `{"spec": "specs/master.py", "artboard": "<id>"}`. Later changes go through **sync-board**.
 
 ## 4. Audit
 Run **audit-flow** on the master map at inventory level: areas with no empty, error or loading states, routes without designs, designs without routes. New gaps join the registry under the journey for that area, or `N0·n` if no journey covers it yet. Questions about the whole app go in as `_uf.py add-question M "<text>"` and render in the master map's panel.

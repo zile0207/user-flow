@@ -112,7 +112,7 @@ def round_blocks(spec, W):
         n = ri + 1
         ask = r.get('ask')
         out.append(f'<div layer-name="Round {n}" style="position:absolute;left:{X0}px;top:{y}px;width:{W-X0-PAD}px;display:flex;align-items:baseline;gap:14px;padding-bottom:12px;border-bottom:1px solid {LINE}">'
-                   + label(f'ROUND {n}', AMBER) + t(f"{len(r['directions'])} directions · {r['date']}", 13, 18, 500, MUTED)
+                   + label(f'ROUND {n}', AMBER) + t(f"{len(r['directions'])} direction{'s' if len(r['directions']) != 1 else ''} · {r['date']}", 13, 18, 500, MUTED)
                    + (t(f'You asked: {ask}', 15, 20, 600, INK) if ask else '') + '</div>')
         dy = y + ROUND_LABEL_H
         x = X0
@@ -148,7 +148,9 @@ def round_blocks(spec, W):
                            + label('CONFIRMED', base.ACCENT) + t(txt, 16, 22, 500, INK) + '</div>')
             else:
                 letters = ', '.join(d['letter'] for d in r['directions'])
-                txt = f'Reply with one of: confirm {letters.split(", ")[0]} · iterate on {letters.split(", ")[0]} ("smaller, keep the live places") · more variants · mix ("A\'s size with B\'s places"). The next round goes below this one.'
+                ls = letters.split(', ')
+                mix = f' · mix ("{ls[0]}\'s layout with {ls[1]}\'s copy")' if len(ls) > 1 else ''
+                txt = f'Reply with one of: confirm {ls[0]} · iterate on {ls[0]} ("what to change") · more variants{mix}. The next round goes below this one.'
                 out.append(f'<div layer-name="Your pick" style="position:absolute;left:{X0}px;top:{by}px;width:{W-X0-PAD}px;height:{BAR_H}px;background:#F6F7F7;border-radius:20px;padding:0 32px;display:flex;align-items:center;gap:24px;box-sizing:border-box">'
                            + label('YOUR PICK', AMBER) + t(txt, 16, 22, 500, INK) + '</div>')
         y += ROUND_GAP

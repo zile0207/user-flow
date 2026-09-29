@@ -1,19 +1,23 @@
-"""Promoted chapter: confirmed exploration screens, laid out like a chapter on the screens page, with stable screen ids.
-One chapter per journey: 'X2 · From explorations (Journey 2)', screens X2·1, X2·2, …
-The screens are the exploration spec's own HTML for the chosen direction, so nothing is redrawn by hand."""
-import importlib.util, os
-from . import base, board
-from .base import t, INK, MUTED, GREY
+"""Promotion: a confirmed exploration's screens become library frames.
 
-STEP = 470          # screen column pitch, like the confirmed chapters
-TOP = 216
+Each screen of the chosen direction becomes its own artboard on the promote page (the library page), named with a
+stable id, 'X1·1 · Google failed', exactly like every other library screen. The library index then includes them,
+the master map places them in their area (instead of the gap's dashed frame), and the maps copy them.
+
+    C = PromotedChapter(P, 1)          # prefix 'X' by default (config.json → promote_prefix)
+    C.add('N1·3')                      # promoted gaps of this journey, in map order
+    C.render(date)                     # → out/promoted_j1/promote.json and made/NN.html; nothing is written to the registry
+
+After the frames are made: `_uf.py promoted promoted_j1 <node id>…` records ids and nodes in gaps.json.
+"""
+import importlib.util, json, os, sys
+from . import base
 
 
 def _load_spec(P, rel):
     path = os.path.join(P.root, rel)
     spec = importlib.util.spec_from_file_location(os.path.basename(path)[:-3], path)
     mod = importlib.util.module_from_spec(spec)
-    import sys
     sys.path.insert(0, os.path.dirname(path))
     spec.loader.exec_module(mod)
     return mod.SPEC
@@ -36,33 +40,33 @@ class PromotedChapter:
         d = [d for r in SPEC['rounds'] for d in r['directions'] if d['letter'] == g['chosen']][0]
         self.items.append((gid, g, d))
 
-    def render(self, story, date):
+    def render(self, date=''):
         cid = f'{self.prefix}{self.J}'
-        B = board.Board(self.P, f'promoted_j{self.J}')
-        # stable ids: reuse what the registry already has, give new screens the next numbers
+        name = f'promoted_j{self.J}'
+        # stable ids: keep what the registry already has, give new screens the next numbers
         used = [int(s.split('·')[1]) for _, g, _ in self.items for s in g.get('screen_ids', [])]
         nxt = max(used, default=0) + 1
-        cols = []
+        made = []
         for gid, g, d in self.items:
             ids = list(g.get('screen_ids', []))
             while len(ids) < len(d['screens']):
                 ids.append(f'{cid}·{nxt}'); nxt += 1
-            if ids != g.get('screen_ids'):
-                self.P.set_gap(gid, screen_ids=ids, state='promoted', chapter=cid)
             for sid, s in zip(ids, d['screens']):
-                cols.append((sid, gid, s))
-        W = 40 + len(cols) * STEP + 40
-        H = TOP + base.PH + 80
-        B.add('header', f'<div layer-name="Header bar" style="position:absolute;left:40px;top:40px;width:{W-80}px;height:56px;background:{INK};border-radius:14px;display:flex;align-items:center;padding:0 20px;gap:16px;box-sizing:border-box">'
-              + t(self.P.cfg.get('device_label', 'Mobile · iPhone'), 13, 18, 500, '#9AA4A6') + '<div style="width:1px;height:20px;background:#3A4245"></div>'
-              + t(f'{cid} · From explorations (Journey {self.J})', 17, 22, 700, '#FFFFFF') + '<div style="flex:1"></div>'
-              + t(f'Confirmed designs · {date}', 13, 18, 500, '#9AA4A6') + f'<div style="width:10px;height:10px;border-radius:5px;background:{base.ACCENT}"></div></div>')
-        B.add('story', f'<div layer-name="Story line" style="position:absolute;left:40px;top:116px;width:{W-80}px">' + t(story, 17, 24, 500, MUTED) + '</div>')
-        for i, (sid, gid, s) in enumerate(cols):
-            x = 40 + i * STEP
-            B.add('label' + sid.replace('·', '_'), f'<div layer-name="Step label" style="position:absolute;left:{x}px;top:176px;display:flex;gap:8px;align-items:baseline">'
-                  + t(f'{sid} · {s["label"]}', 15, 20, 700, INK, 'white-space:nowrap;') + t(f'from {gid}', 13, 18, 500, GREY, 'white-space:nowrap;') + '</div>')
-            html = s['html'].replace('position:relative;', f'position:absolute;left:{x}px;top:{TOP}px;', 1)
-            B.add('screen' + sid.replace('·', '_'), html)
-        print(f'{cid}: {len(cols)} screens from {len(self.items)} gaps')
-        return B.emit(W, H, page='screens')
+                html = s['html']
+                made.append(dict(gap=gid, id=sid, name=f"{sid} · {s['label']}", width=base.PW, height=base.PH, html=html))
+        out = os.path.join(self.P.root, 'out', name)
+        md = os.path.join(out, 'made')
+        os.makedirs(md, exist_ok=True)
+        for f in os.listdir(md):
+            os.remove(os.path.join(md, f))
+        for j, m in enumerate(made):
+            m['file'] = os.path.join(md, f'{j:02d}.html')
+            open(m['file'], 'w').write(m['html'])
+        page = self.P.cfg['sources']['paper'].get('promote_page') or self.P.cfg['sources']['paper'].get('library_page')
+        plan = dict(board=name, chapter=cid, page=page, date=date, made=[{k: v for k, v in m.items() if k != 'html'} for m in made])
+        json.dump(plan, open(os.path.join(out, 'promote.json'), 'w'), indent=1, ensure_ascii=False)
+        print(f'{cid}: {len(made)} screens from {len(self.items)} gaps → page {page}')
+        for m in made:
+            print(f"  {m['name']} | {m['width']} x {m['height']} | {m['file']}")
+        print(f'Make each as an artboard (create_artboard + write_html), then: _uf.py promoted {name} <node id of each, in this order>')
+        return plan

@@ -15,7 +15,10 @@ library <tree file>                     index the library page: get_tree_summary
 find <words…> | --gap <gap id>          library screens that match (confirm each with a screenshot)
 unplaced <board> <group,group…>         library screens in those groups that the board doesn't show yet
 stale <board> <node id…> | all          copies of these frames get re-copied on the next sync (after the source changed)
-layout-ops <board>                      the Paper calls that lay the library page out as the master map
+layout-ops <board>                      the Paper calls that lay the library page out as the master map (only what changed)
+layout-commit <board> [<ids file>]      record the layout; ids file: "<node id> <name>" per generated frame
+promoted <board> <node id…>             after promote-design's frames are made: record their ids and nodes
+tree <saved tool result> <out file>     turn a get_tree_summary result (even the harness's saved JSON) into "<id> <name>" lines
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
 """
@@ -209,32 +212,92 @@ def ops(P, args):
     print(f'\nThen: screenshot the changed nodes at scale 1, and `python3 specs/<spec>.py --commit {art}`.')
 
 
+def _layout_state(P, name):
+    os.makedirs(os.path.join(P.root, 'boards'), exist_ok=True)
+    p = os.path.join(P.root, 'boards', f'{name}_layout.json')
+    return (json.load(open(p)) if os.path.exists(p) else None), p
+
+
 def layout_ops(P, name):
+    """The Paper calls for the library layout: only what changed since the last layout-commit."""
     out = os.path.join(P.root, 'out', name)
     plan = json.load(open(os.path.join(out, 'layout.json')))
+    state, _ = _layout_state(P, name)
     fid = P.cfg.get('sources', {}).get('paper', {}).get('file_id', '<file id>')
     page = plan['page']
     made_dir = os.path.join(out, 'made')
     os.makedirs(made_dir, exist_ok=True)
     for f in os.listdir(made_dir):
         os.remove(os.path.join(made_dir, f))
-    print(f"1. Replace the old generated frames: get_tree_summary(root_node_{page}, depth 1); delete_nodes every child whose name starts with \"{plan['prefix']}\" (none the first time).")
-    moves = plan['moves']
-    if plan.get('from_page') and plan['from_page'] != page:
+    old_moves = (state or {}).get('moves', {})
+    old_made = (state or {}).get('made', {})
+    moves = [m for m in plan['moves'] if old_moves.get(m['node']) != [m['left'], m['top']]]
+    new_made = {m['name']: m for m in plan['made']}
+    gone = [(n, v.get('node')) for n, v in old_made.items() if n not in new_made or new_made[n]['h'] != v['h']]
+    make = [m for m in plan['made'] if m['name'] not in old_made or old_made[m['name']]['h'] != m['h']]
+    print(f"{name}: {len(moves)} frames to move · {len(gone)} generated frames to delete · {len(make)} to make"
+          + ('' if state else ' (first layout)'))
+    if not state:
+        print(f"1. First layout: get_tree_summary(root_node_{page}, depth 1) and delete any child whose name starts with \"{plan['prefix']}\".")
+    elif gone:
+        ids = [nid for _, nid in gone if nid]
+        print('1. delete_nodes (generated frames that changed or went away):')
+        print(json.dumps({'fileId': fid, 'nodeIds': ids}))
+        missing = [n for n, nid in gone if not nid]
+        if missing:
+            print('   no node id recorded for: ' + '; '.join(missing) + ' (find them by name)')
+    if plan.get('from_page') and plan['from_page'] != page and not state:
         print(f"\n1b. Move the library frames to page {page} (ids stay the same): move_nodes, in batches of 100:")
         for i in range(0, len(moves), 100):
             print(json.dumps({'fileId': fid, 'nodes': [{'nodeId': m['node'], 'parentId': f'root_node_{page}'} for m in moves[i:i + 100]]}))
-        print(f"   Afterwards set config.json → sources.paper.library_page to {page} and re-index the library from that page.")
     for i in range(0, len(moves), 100):
-        print(f"\n2.{i // 100 + 1} update_styles (move library frames {i + 1}–{min(i + 100, len(moves))} of {len(moves)}):")
+        print(f"\n2.{i // 100 + 1} update_styles (move frames {i + 1}–{min(i + 100, len(moves))} of {len(moves)}):")
         print(json.dumps({'fileId': fid, 'updates': [{'nodeIds': [m['node']], 'styles': {'left': f"{m['left']}px", 'top': f"{m['top']}px"}} for m in moves[i:i + 100]]}, ensure_ascii=False))
-    print(f"\n3. Make {len(plan['made'])} frames. For each line: create_artboard(fileId, pageId \"{page}\", name, width, height, backgroundColor transparent), "
-          "then write_html(insert-children, the new artboard, the file), then collect its id for the move below.")
-    for j, m in enumerate(plan['made']):
-        f = os.path.join(made_dir, f'{j:02d}.html'); open(f, 'w').write(m['html'])
-        print(f"  {m['name']} | {m['width']} x {m['height']} | left {m['left']} top {m['top']} | {f}")
-    print("\n4. One update_styles with every made frame's left/top (create_artboard ignores position).")
-    print(f"5. get_screenshot a few frames to check, then record it: config.json → maps.master = {{\"layout\": \"library\", \"spec\": \"specs/master.py\", \"page\": \"{page}\"}}.")
+    if make:
+        print(f"\n3. Make {len(make)} frames: create_artboard(fileId, pageId \"{page}\", name, width, height, backgroundColor transparent), "
+              "then write_html(insert-children, the new artboard, the file). Note each new id.")
+        for j, m in enumerate(make):
+            f = os.path.join(made_dir, f'{j:02d}.html'); open(f, 'w').write(m['html'])
+            print(f"  {m['name']} | {m['width']} x {m['height']} | left {m['left']} top {m['top']} | {f}")
+        print("\n4. One update_styles with every made frame's left/top (create_artboard ignores position).")
+    print(f"\nThen: _uf.py layout-commit {name} <file with one line per made frame: \"<node id> <name>\">")
+
+
+def layout_commit(P, name, ids_file=None):
+    plan = json.load(open(os.path.join(P.root, 'out', name, 'layout.json')))
+    state, path = _layout_state(P, name)
+    old = (state or {}).get('made', {})
+    ids = {}
+    if ids_file:
+        for line in open(ids_file):
+            line = line.strip()
+            if line:
+                nid_, nm = line.split(' ', 1)
+                ids[nm.strip()] = nid_
+    made = {}
+    for m in plan['made']:
+        node = ids.get(m['name']) or next((v for k, v in ids.items() if m['name'].startswith(k) or k.startswith(m['name'][:45])), None)
+        if not node and m['name'] in old and old[m['name']]['h'] == m['h']:
+            node = old[m['name']].get('node')
+        made[m['name']] = {'h': m['h'], 'node': node}
+    st = {'page': plan['page'], 'moves': {m['node']: [m['left'], m['top']] for m in plan['moves']}, 'made': made}
+    json.dump(st, open(path, 'w'), indent=1, ensure_ascii=False)
+    missing = [n for n, v in made.items() if not v['node']]
+    print(f"committed: boards/{name}_layout.json · {len(st['moves'])} frames · {len(made)} generated frames"
+          + (f" · no node id for {len(missing)} (the next change to them needs a lookup by name)" if missing else ''))
+
+
+def promoted(P, name, nodes):
+    plan = json.load(open(os.path.join(P.root, 'out', name, 'promote.json')))
+    assert len(nodes) == len(plan['made']), f"give {len(plan['made'])} node ids, one per made frame, in order"
+    by_gap = {}
+    for m, n in zip(plan['made'], nodes):
+        by_gap.setdefault(m['gap'], []).append((m['id'], board_nid(n)))
+    for gid, pairs in by_gap.items():
+        P.set_gap(gid, state='promoted', chapter=plan['chapter'], screen_ids=[s for s, _ in pairs],
+                  screen_nodes=[n for _, n in pairs], node=pairs[0][1])
+        print(f"{gid}: promoted as {', '.join(s for s, _ in pairs)}")
+    print('Next: re-index the library, re-render and sync the maps that show these gaps, and re-run the master layout.')
 
 
 def _val(v):
@@ -247,6 +310,8 @@ def _val(v):
 def main(P, argv):
     args = list(argv)
     if not args:
+        if sys.argv[0].endswith('_uf.py'):
+            print(__doc__)
         return
     cmd = args.pop(0)
     if cmd == 'status':
@@ -275,6 +340,14 @@ def main(P, argv):
         ops(P, args)
     elif cmd == 'layout-ops':
         layout_ops(P, args[0])
+    elif cmd == 'layout-commit':
+        layout_commit(P, args[0], args[1] if len(args) > 1 else None)
+    elif cmd == 'promoted':
+        promoted(P, args[0], args[1:])
+    elif cmd == 'tree':
+        rows, _ = board.Board.read_tree(args[0])
+        open(args[1], 'w').write(''.join(f'{i} {n}\n' for i, n in rows))
+        print(f'{len(rows)} children → {args[1]}')
     elif cmd in ('library', 'find', 'unplaced'):
         from .library import Library
         L = Library(P)

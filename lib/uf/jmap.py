@@ -180,9 +180,8 @@ class Map:
                         + t(f'Designed in Explore · {g} ({d["chosen"]}).', 12, 16, 500, MUTED) + '</div></div>')
             if st == 'explored':
                 return (f'<div layer-name="{g} · {d["title"]} · explored" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
-                        f'<div style="position:relative;width:180px;height:390px;flex-shrink:0">' + base.screen(d['node'], 180) +
-                        f'<div style="position:absolute;left:8px;top:8px;background:{base.ACCENT};border-radius:999px;padding:4px 9px">' + t(f'EXPLORED · {d["chosen"]}', 10, 12, 700, '#FFFFFF', 'letter-spacing:0.08em;') + '</div></div>'
-                        '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">' + t(g, 11, 14, 700, base.ACCENT, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK)
+                        + base.screen(d['node'], 180) +
+                        '<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">' + t(f'{g} · EXPLORED · {d["chosen"]}', 11, 14, 700, base.ACCENT, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK)
                         + t(f'Chosen: {d["chosen"]}, round {d["round"]}. See Explore · {g}.', 12, 16, 500, MUTED) + '</div></div>')
             if st == 'later':
                 tag = f'{g} · AFTER MVP'; bot = g; tagc, bd, bg = '#6B7678', '#D3D8DA', '#FFFFFF'

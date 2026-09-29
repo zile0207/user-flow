@@ -104,7 +104,7 @@ Every screen on a map, the master map or a state map is a **live copy of the rea
 
 ## The library
 The library page holds every confirmed screen, however it's organised. Journeys put these screens in context, so **before anything becomes a needs-design gap, look for it in the library.**
-- Index it once, and again when the page changes: `get_tree_summary(root_node_<library page>, depth 1)` → save to `out/library_tree.txt` → `python3 design/user-flow/specs/_uf.py library out/library_tree.txt`. Frames as wide as the device are screens; wider or short frames are headers and bands.
+- Index it once, and again when the page changes: `get_tree_summary(root_node_<library page>, depth 1)` → save to `out/library_tree.txt` (a large result your harness saved to a file can be passed as it is) → `python3 design/user-flow/specs/_uf.py library out/library_tree.txt`. Frames as wide as the device are screens; wider or short frames are headers and bands.
 - `_uf.py find <words>` or `_uf.py find --gap N2·3` lists candidate screens by name. Confirm each with `get_screenshot` before using it.
 - `_uf.py unplaced <board> <group,group>` lists library screens in those groups (the first part of a frame name, like `5.4`, `DO`, `MON`) that the board doesn't show yet.
 - A gap the library already covers becomes `found`: `_uf.py set-gap N1·5 state=found node=PY1-0 ref=DO4`. Maps then show that frame, labelled "DO4 · was N1·5".

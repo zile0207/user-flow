@@ -25,7 +25,7 @@ description: Design a needs-design gap (N2·3 style id) on its own exploration b
 
 ## 2. References
 - **The user's first:** images or links in the prompt, or a frame named `Refs · <id>` on the maps page.
-- **Otherwise Mobbin:** 2 or 3 searches aimed at the job, not the look ("share extension saving to an app", not "clean card"). Keep 3 to 6. Download the images into `refs/`. Each one gets one line on what to take from it.
+- **Otherwise Mobbin:** 2 or 3 searches aimed at the job, not the look ("share extension saving to an app", not "clean card"). Keep 3 to 6. Download the images into `refs/` (`curl -L`, the links redirect; convert webp to png, e.g. `sips -s format png in.webp --out out.png`). Each one gets one line on what to take from it.
 
 ## 3. Three directions
 - Read the nearest confirmed screen with get_jsx and extend `ui_kit.py` with any part you need. Screens are built only from ui_kit parts.

@@ -34,11 +34,8 @@ def ref_of(name):
 
 
 def parse(text, device_w=390):
-    try:
-        data = json.loads(text)
-        text = data.get('summary', text) if isinstance(data, dict) else text
-    except ValueError:
-        pass
+    from .board import tree_data
+    text = tree_data(text)
     screens, headers = [], []
     for line in text.splitlines():
         m = re.match(r'^ {2}\S+ "(.*)" \(([\w]+-[\w]+)\) (\S+)×(\S+)', line)

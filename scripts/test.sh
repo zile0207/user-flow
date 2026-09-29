@@ -10,7 +10,7 @@ FIX="$TMP/design/user-flow"
 export USER_FLOW_ROOT="$REPO"
 cd "$FIX/specs"
 fail=0
-for pair in journey:journey master:master states:states explore:explore promote:promoted_j1; do
+for pair in journey:journey master:master states:states explore:explore; do
   spec="${pair%%:*}"; boardname="${pair#*:}"
   python3 "$spec.py" > /dev/null
   python3 - "$FIX" "$REPO/tests/expected" "$boardname" "${1:-}" <<'PY' || fail=1

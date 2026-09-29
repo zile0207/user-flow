@@ -4,7 +4,9 @@ A master map that copies every screen doubles the file (a copy duplicates every 
 size limit). When the project has a library page, the master map is that page, laid out: every screen frame is
 moved into its area, in the order the persona meets them, under a title band, with a dashed frame for each screen
 still to design. Frames keep everything but their position. The page's other frames (section notes, bands) stay
-where they are.
+where they are. Promoted screens (library frames made by promote-design) take their gap's place in its area.
+Applying it is incremental: `_uf.py layout-ops` prints only the moves and frames that changed since the last
+`_uf.py layout-commit`.
 
     L = LibraryLayout(P, cols=14, origin=(40000, 0))
     L.area('Onboarding', 'B1–B11', ['B'], gaps=['N1·1'], entries='first launch')
@@ -68,14 +70,16 @@ class LibraryLayout:
     # ---------------- layout
     def _place_area(self, a, x0, y0, W, moves, made):
         """Lays one area out at (x0, y0). Returns its height."""
-        gaps = [self.P.gap(g) for g in a['gaps']]
-        gaps = [g for g in gaps if g.get('state', 'todo') in ('todo', 'exploring', 'later', 'explored')]
+        allg = [self.P.gap(g) for g in a['gaps']]
+        gaps = [g for g in allg if g.get('state', 'todo') in ('todo', 'exploring', 'later', 'explored')]
+        promoted = [dict(node=n, name=f'{sid} (was {g["id"]})') for g in allg if g.get('state') == 'promoted'
+                    for sid, n in zip(g.get('screen_ids', []), g.get('screen_nodes', []))]
         n_todo = sum(1 for g in gaps if g.get('state', 'todo') in ('todo', 'exploring'))
         key = ''.join(ch for ch in a['name'].title() if ch.isalnum())
         made.append(dict(name=f'{PREFIX}band{key} · {a["name"]}', left=x0, top=y0, width=W, height=BAND_H,
                          html=self._band(a, W, len(a['items']), n_todo)))
         y = y0 + BAND_H + AFTER_BAND + LABEL
-        fixed = [s for s in a['items'] if s.get('h') not in ('?', None)]
+        fixed = [s for s in a['items'] if s.get('h') not in ('?', None)] + promoted     # promoted frames replace their gap
         tall = [s for s in a['items'] if s.get('h') in ('?', None)]
         cells = [('screen', s) for s in fixed] + [('gap', g) for g in gaps]
         for rows, pitch in ((cells, base.PH + LABEL + GAP_X), ([('screen', s) for s in tall], TALL_PITCH)):
@@ -112,6 +116,9 @@ class LibraryLayout:
         out = os.path.join(self.P.root, 'out', name)
         os.makedirs(out, exist_ok=True)
         src = self.P.cfg['sources']['paper'].get('library_page')
+        import hashlib
+        for m in made:
+            m['h'] = hashlib.sha1(m['html'].encode()).hexdigest()[:12]
         plan = dict(board=name, page=to_page or src, from_page=src, prefix=PREFIX, moves=moves, made=made,
                     left_out=left_out, size=[W, y - self.y0])
         json.dump(plan, open(os.path.join(out, 'layout.json'), 'w'), indent=1, ensure_ascii=False)

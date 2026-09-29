@@ -21,3 +21,5 @@ Run it before showing a round's directions, and again before confirming one. Fix
 
 **Difference** (round review only)
 - A, B and C differ in size, how much happens, or what the person decides. If two are the same idea in different styles, replace one.
+
+Where a check fails the same way on the app's own confirmed screens (for example white text on the brand colour), record it under Costs rather than failing the direction, and say it's an app-wide issue.

@@ -15,30 +15,31 @@ A confirmed direction lives on its exploration board until it's promoted. Promot
 - Only confirmed gaps can be promoted, meaning ones with an exploration board and a chosen direction. For a gap that's only exploring, point to **explore-design** first.
 - Run **design-review** (`references/design-review.md`) on the chosen screens one last time. Promotion means developers start building.
 
-## 2. The chapter
-- Each journey gets one promoted chapter: `X<journey> · From explorations (Journey <n>)`, spec `specs/promoted_j<n>.py`:
+## 2. The screens become library frames
+Each screen of the chosen direction becomes its own artboard on the **promote page** (`sources.paper.promote_page`, the library page by default), named with a stable id, `X1·1 · Google failed`, like every other library screen. Ids are never reused or renumbered; new gaps get the next numbers.
+- Say that this writes to the library page and ask first, unless the user already said to go ahead.
+- One spec per journey, `specs/promoted_j<n>.py`:
 ```python
 from _uf import P
 from uf.promote import PromotedChapter
-C = PromotedChapter(P, 2)          # prefix 'X' by default; set config.json → promote_prefix to change it
-C.add('N2·1')                      # every promoted gap for this journey, in the order they appear on the map
+C = PromotedChapter(P, 1)          # prefix 'X' (config.json → promote_prefix)
+C.add('N1·3')                      # every promoted gap of this journey, in map order
 if __name__ == '__main__':
-    C.render('Screens confirmed in explorations for Journey 2 · Collecting.', 'Mon 28 Sep 2026')
+    C.render('Tue 29 Sep 2026')
 ```
-- The render gives each screen a stable id (X2·1, X2·2, …). It stores the ids in `gaps.json` (`screen_ids`, `chapter`) and sets the gap to `promoted`. Ids are never reused or renumbered. Add new gaps at the end.
-- **First time:** create the artboard on the **promote page** (`sources.paper.promote_page`; if unset, the library page, else the screens page), after the existing content, at the printed size. Paint it in full and commit (`sync.md` → First paint).
-  - This is the only time the plugin writes to a screens page. Say so and ask before doing it, unless the user already said to go ahead.
-  - Record the chapter in `config.json` → `maps.promoted`: `{"journey": <n>, "spec": "specs/promoted_j<n>.py", "artboard": "<id>", "page": "<page id>"}`.
-- **Later:** **sync-board** the chapter.
+- Render it: it lists the frames to make (name, 390 × 844, HTML file). Nothing goes into the registry yet.
+- For each: `create_artboard(pageId = promote page, name, width, height)`, then `write_html(insert-children)` with the file. Put them anywhere free for now; the master layout places them.
+- Record them: `_uf.py promoted promoted_j<n> <node id of each frame, in order>`. The gap becomes `promoted`, with its `screen_ids`, `screen_nodes` and `node` (the first frame).
+- Record the spec in `config.json` → `maps.promoted`: `{"journey": <n>, "spec": "specs/promoted_j<n>.py", "page": "<page id>"}`.
 
 ## 3. Update the maps
-- Point the gap at the promoted frame: find the node id of `<board>:screenX2_1` (`get_tree_summary` of the chapter, depth 1) and run `_uf.py set-gap <id> node=<that node id>`. The maps then show a live copy of the promoted screen, never an image.
-- Re-index the library (`_uf.py library …`) so the promoted screens are in it.
-- Re-render and **sync-board** every map that shows the gap, plus the master map. The card becomes a normal screen card with the new id and "Designed in Explore · N2·1 (A)".
-- Mark the exploration done in `config.json` → `maps.explorations` (`state: promoted`).
+- Re-index the library (`_uf.py library …`, `project-and-paper.md` → The library), so the new frames are in it.
+- Re-render and **sync-board** every map that shows the gap. The card becomes the promoted frame (a live copy) with its new id.
+- Re-run the master layout (`specs/master.py`, then `_uf.py layout-ops master`): the promoted frames take the dashed gap frame's place in their area, and only that area's changes are applied. `_uf.py layout-commit master` afterwards.
+- Mark the exploration `promoted` in `config.json` → `maps.explorations`.
 
 ## 4. Report
 - New screen ids.
 - Where the chapter is.
 - Which maps changed.
-- One line for developers: "Build X2·1 and X2·2 from the <screens page name> page. Journey 2 shows where they sit."
+- One line for developers: "Build X1·1 and X1·2 from the <library page name> page. Journey 1 shows where they sit."

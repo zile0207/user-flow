@@ -59,6 +59,26 @@ def scale_html(html, s):
     return re.sub(r';zoom:([\d.]+)', z, out)
 
 
+def tree_data(raw):
+    """A tree summary as text, or a get_children result as data, from whatever was saved: the plain summary, the tool's
+    JSON result, or the JSON file a harness saves a large tool result to ([{"type": "text", "text": …}])."""
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        data = None
+    if isinstance(data, list) and data and isinstance(data[0], dict) and 'text' in data[0]:
+        raw = '\n'.join(x.get('text', '') for x in data)
+        data = None
+    if isinstance(data, dict) and 'summary' in data:
+        return data['summary']
+    if isinstance(data, (dict, list)):
+        return data
+    m = re.search(r'"summary":\s*"((?:[^"\\]|\\.)*)"', raw)
+    if m:
+        return json.loads('"' + m.group(1) + '"')
+    return raw
+
+
 def position(html):
     """(left, top) of the element's root tag, or None when it isn't absolutely placed."""
     head = html[:html.index('>')]
@@ -252,12 +272,7 @@ class Board:
     def read_tree(path):
         """[(node id, layer name)] of the artboard's direct children, from any of the accepted formats."""
         raw = open(path).read()
-        try:
-            data = json.loads(raw)
-        except ValueError:
-            data = raw
-        if isinstance(data, dict) and 'summary' in data:
-            data = data['summary']
+        data = tree_data(raw)
         if isinstance(data, str):
             rows = []
             for line in data.splitlines():

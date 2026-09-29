@@ -293,6 +293,47 @@ def test_library_layout_moves_frames_and_copies_nothing():
     assert '"PY1-0"' in out and 'create_artboard' in out
 
 
+def test_promote_makes_library_frames_then_records_them():
+    root = fresh()
+    out = run(root, 'promote.py')
+    plan = json.load(open(os.path.join(root, 'out', 'promoted_j1', 'promote.json')))
+    assert plan['made'] and plan['made'][0]['name'].startswith('X1·1 · ') and plan['made'][0]['width'] == 390
+    from uf import project
+    assert project.load(root).gap('N1·4')['state'] == 'explored'          # nothing recorded before painting
+    nodes = [f'P{i}-0' for i in range(len(plan['made']))]
+    run(root, '_uf.py', 'promoted', 'promoted_j1', *nodes)
+    g = project.load(root).gap('N1·4')
+    assert g['state'] == 'promoted' and g['screen_nodes'] == nodes and g['node'] == nodes[0] and g['screen_ids'][0] == 'X1·1'
+
+
+def test_library_layout_is_incremental():
+    root = fresh()
+    os.makedirs(os.path.join(root, 'out'), exist_ok=True)
+    tree = os.path.join(root, 'out', 'lib.txt')
+    open(tree, 'w').write('\n'.join([' "" (root_node_p-1-0) ?×?',
+        '  Frame "DO4 · Tap Use my location" (PY1-0) 390×844', '  Frame "DO2 · Second open" (Q2R-0) 390×844']))
+    run(root, '_uf.py', 'library', tree)
+    sys.path.insert(0, os.path.join(root, 'specs'))
+    from uf import project, library_layout
+    def layout():
+        L = library_layout.LibraryLayout(project.load(root), cols=4, origin=(0, 0), per_row=1)
+        L.area('Day one', 'DO', ['DO'], gaps=['N1·1', 'N1·4'])
+        return L.render('Test', 'today')
+    layout()
+    first = run(root, '_uf.py', 'layout-ops', 'master')
+    assert '2 frames to move' in first and '(first layout)' in first
+    ids = os.path.join(root, 'out', 'ids.txt')
+    plan = json.load(open(os.path.join(root, 'out', 'master', 'layout.json')))
+    open(ids, 'w').write(''.join(f'M{i}-0 {m["name"]}\n' for i, m in enumerate(plan['made'])))
+    run(root, '_uf.py', 'layout-commit', 'master', ids)
+    layout()
+    assert '0 frames to move · 0 generated frames to delete · 0 to make' in run(root, '_uf.py', 'layout-ops', 'master')
+    run(root, '_uf.py', 'set-gap', 'N1·1', 'state=later')                  # one gap changes: only its frame
+    layout()
+    again = run(root, '_uf.py', 'layout-ops', 'master')
+    assert '2 generated frames to delete · 2 to make' in again and '"M1-0", "M2-0"' in again, again      # its frame and the band's count
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

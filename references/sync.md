@@ -14,13 +14,13 @@ It prints the element count, the full-paint chunk count, the artboard size, any 
 1. Create the artboard at the printed size, on the right page. Maps go on the maps page and explorations on the explore page (see `config.json` → `sources.paper`). `create_artboard` ignores left and top: place it afterwards with `update_styles` (left, top), 80px or more right of the last board. If the board already exists unkeyed (painted before sync existed), delete its children first.
 2. Paste every `out/<board>/full/NN.html` into the artboard with `write_html(insert-children)`, byte for byte, in order.
    - Chunks with screen copies (`<x-paper-clone`): always a paste subagent, since each copy returns a very large response. Other chunks: 1 or 2, paste them yourself.
-   - More: hand them to **one** paste subagent at a time, with the prompt below (up to 6 chunks each). Never run two paste agents on the same artboard at once: the layer order would interleave.
+   - More: hand them to **one** paste subagent at a time, and screenshot only after it replies (a screenshot sent alongside shows the board before the paste), with the prompt below (up to 6 chunks each). Never run two paste agents on the same artboard at once: the layer order would interleave.
 3. **Commit straight away:** `python3 specs/<spec>.py --commit <artboard id>`. The board now matches the spec, so from here on every change is a sync.
 4. Record the artboard in `config.json` → `maps`.
 5. Review: screenshot the whole board, then each row at scale 1 (a whole-board screenshot is too small to read 12px labels). Fix problems in the spec, re-render, and sync.
 
 ## Sync (mode: sync)
-1. **Read the board:** `get_tree_summary(<artboard>, depth 1)`. Save it to `out/<board>/tree.txt`. The shortest form is one line per child, `<node id> <board>:<key>`: leave out the rest of the name and the `... N children` lines.
+1. **Read the board:** `get_tree_summary(<artboard>, depth 1)`. Save it to `out/<board>/tree.txt`. If your harness saved a large result to a file, `_uf.py tree <that file> out/<board>/tree.txt` extracts it, with no retyping. The shortest form is one line per child, `<node id> <board>:<key>`: leave out the rest of the name and the `... N children` lines.
    - Don't use `get_children` for this: it stops at 100 children, and `--drift` refuses a cut list.
 2. **Drift:** `python3 specs/<spec>.py --drift out/<board>/tree.txt`. This puts node ids into `out/<board>/sync/plan.json` and prints:
    - **unkeyed:** elements someone added by hand, with their node ids.

@@ -5,7 +5,7 @@ description: Plot every screen in the app on one master map, grouped by area, wi
 
 # map-master
 
-**With a library page, the master map is that page, organised** (`uf.library_layout`): every screen frame moves into its area, in the order the persona meets them, under a title band, with a dashed frame for each screen still to design. Nothing is copied: copying every screen doubles the file and hits Paper's size limit. Frames keep everything but their position; the page's other frames (notes, bands) stay where they are. Say so and ask before the first layout, since it rearranges the page. Without a library page, use `uf.master.MasterMap` (a generated board of copies) and keep it small.
+**With a library page, the master map is that page, organised** (`uf.library_layout`): every screen frame moves into its area, in the order the persona meets them, under a title band, with a dashed frame for each screen still to design. Nothing is copied: copying every screen doubles the file and hits Paper's size limit. Frames keep everything but their position; the page's other frames (notes, bands) stay where they are. Say so and ask before the first layout, since it rearranges the page. The layout can also go on a page of its own (`render(..., to_page=…)`): the frames move there with their ids, that page becomes the library, and the old page can be retired. Without a library page, use `uf.master.MasterMap` (a generated board of copies) and keep it small.
 
 The master map is the inventory. It shows every screen from every source, grouped by area, with every needs-design gap in its area. It has no arrows: journeys and flows carry those.
 

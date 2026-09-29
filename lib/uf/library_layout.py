@@ -90,7 +90,8 @@ class LibraryLayout:
                 y += ((len(rows) - 1) // self.cols + 1) * pitch
         return y - y0
 
-    def render(self, title, date, name='master'):
+    def render(self, title, date, name='master', to_page=None):
+        """to_page: lay the frames out on another page (they move there, ids intact), which then becomes the library."""
         W = self.cols * base.PW + (self.cols - 1) * GAP_X
         total_w = self.per_row * W + (self.per_row - 1) * AREA_GAP
         moves, made = [], []
@@ -110,7 +111,8 @@ class LibraryLayout:
         left_out = [s['name'] for s in self.screens if s['node'] not in placed]
         out = os.path.join(self.P.root, 'out', name)
         os.makedirs(out, exist_ok=True)
-        plan = dict(board=name, page=self.P.cfg['sources']['paper'].get('library_page'), prefix=PREFIX, moves=moves, made=made,
+        src = self.P.cfg['sources']['paper'].get('library_page')
+        plan = dict(board=name, page=to_page or src, from_page=src, prefix=PREFIX, moves=moves, made=made,
                     left_out=left_out, size=[W, y - self.y0])
         json.dump(plan, open(os.path.join(out, 'layout.json'), 'w'), indent=1, ensure_ascii=False)
         print(f'{name}: {len(moves)} library frames to move · {len(made)} frames to make ({len(self.areas)} bands, '

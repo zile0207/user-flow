@@ -213,6 +213,11 @@ def layout_ops(P, name):
         os.remove(os.path.join(made_dir, f))
     print(f"1. Replace the old generated frames: get_tree_summary(root_node_{page}, depth 1); delete_nodes every child whose name starts with \"{plan['prefix']}\" (none the first time).")
     moves = plan['moves']
+    if plan.get('from_page') and plan['from_page'] != page:
+        print(f"\n1b. Move the library frames to page {page} (ids stay the same): move_nodes, in batches of 100:")
+        for i in range(0, len(moves), 100):
+            print(json.dumps({'fileId': fid, 'nodes': [{'nodeId': m['node'], 'parentId': f'root_node_{page}'} for m in moves[i:i + 100]]}))
+        print(f"   Afterwards set config.json → sources.paper.library_page to {page} and re-index the library from that page.")
     for i in range(0, len(moves), 100):
         print(f"\n2.{i // 100 + 1} update_styles (move library frames {i + 1}–{min(i + 100, len(moves))} of {len(moves)}):")
         print(json.dumps({'fileId': fid, 'updates': [{'nodeIds': [m['node']], 'styles': {'left': f"{m['left']}px", 'top': f"{m['top']}px"}} for m in moves[i:i + 100]]}, ensure_ascii=False))

@@ -74,7 +74,14 @@ def status(P):
     persona = cfg.get('persona', {}).get('name', 'the persona')
     lines = [f"{cfg.get('project', 'Project')} · user-flow"]
     m = cfg.get('maps', {}).get('master')
-    lines.append('Master map: ' + ((m.get('artboard') or 'painted') if isinstance(m, dict) else (m or 'not yet')))
+    paper = cfg.get('sources', {}).get('paper', {})
+    if isinstance(m, dict) and m.get('layout') == 'library':
+        master = f"the library, laid out by area on {paper.get('library_page_name') or m.get('page')}"
+    elif isinstance(m, dict):
+        master = m.get('artboard') or 'painted'
+    else:
+        master = m or 'not yet'
+    lines.append('Master map: ' + master)
 
     out_of_date, rendered = [], {}
     for label, spec, art in _boards(P):

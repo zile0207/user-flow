@@ -356,6 +356,44 @@ def test_brief_and_coverage():
         assert part in b, part
 
 
+def test_cross_file_frames_are_real_layers_at_real_size():
+    root = fresh()
+    cfg = json.load(open(os.path.join(root, 'config.json')))
+    cfg['sources']['paper']['library_file_id'] = 'LIBFILE'
+    json.dump(cfg, open(os.path.join(root, 'config.json'), 'w'))
+    out = run(root, 'journey.py')
+    assert 'frames not fetched yet' in out, out
+    top = """(
+    <div style={{ backgroundColor: '#000000', display: 'flex', flexDirection: 'column', x: '10px' }}>
+      <div style={{ backgroundColor: '#E05254', height: '184px', width: '390px' }}>
+        <div style={{ color: '#FFFFFF', fontFamily: '"Switzer-Bold", "Switzer"', fontSize: '19px' }}>{'Kok Sen'} for dinner</div>
+      </div>
+      <div style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: '32px', height: '660px', width: '390px' }} />
+    </div>
+  )"""
+    fill = """(
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: '32px', height: '700px', width: '390px' }}>
+        <div style={{ fontSize: 28, fontWeight: 700 }}>Explore</div>
+        <svg width="24" height="24" viewBox="0 0 24 24"><path d="M1 1" strokeWidth="2" /></svg>
+      </div>
+    </div>
+  )"""
+    fd = os.path.join(root, 'frames'); os.makedirs(fd, exist_ok=True)
+    open(os.path.join(fd, 'S1-0.jsx'), 'w').write(top)
+    open(os.path.join(fd, 'S2-0.jsx'), 'w').write(fill)
+    edit(os.path.join(root, 'specs', 'journey.py'), "ref='A·1', title='Welcome', note='First screen.', jamie=True)",
+         "ref='A·1', title='Welcome', note='First screen.', jamie=True, sheet='S2-0')")
+    out = run(root, 'journey.py')
+    html = ''.join(open(os.path.join(root, 'out', 'journey', 'full', f)).read() for f in sorted(os.listdir(os.path.join(root, 'out', 'journey', 'full'))))
+    assert 'x-paper-clone' not in html and '<img' not in html
+    assert 'Kok Sen for dinner' in html and 'Explore' in html                  # the top, over the fill's sheet
+    assert 'stroke-width="2"' in html and 'x:10px' not in html
+    assert 'font-size:19px' in html and 'font-size:28px' in html               # real size, not scaled with the board
+    assert 'height:660px' in html                                              # cut to the empty sheet's height
+    assert re.search(r'layer-name="Screen" style="position:relative;width:390px;height:844px', html)
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

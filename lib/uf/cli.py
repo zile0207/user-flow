@@ -20,6 +20,11 @@ layout-commit <board> [<tree or ids>]  record the layout; give the page's tree (
 promoted <board> <node id…>             after promote-design's frames are made: record their ids and nodes
 brief                                   a compact digest of the whole project, for answering questions about it
 coverage                                which library screen families each journey shows, and which no journey covers yet
+screens [--area X] [--group MON] [--find words] [--top-only]
+                                        the screen index: every library screen, its area, stop and whether it's top-only
+frames <board>                          frames a board needs from the library file that aren't fetched yet (cross-file)
+frames-save <node id> <file>            store one get_jsx(inline-styles) result in the frame cache
+frames-from-transcript <jsonl>          store every get_jsx result found in a Claude Code session transcript
 tree <saved tool result> <out file>     turn a get_tree_summary result (even the harness's saved JSON) into "<id> <name>" lines
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
@@ -418,6 +423,96 @@ def brief(P):
               f"Families on no map yet: {', '.join(todo) or 'none'}. Run `_uf.py coverage` for the table.")
 
 
+TOP_FAMILIES = {'GATE', 'N', 'PRE', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN', 'F'}
+
+
+def _stop(name):
+    n = name.lower()
+    if '— half' in n or ' half' in n.split('·')[-1]:
+        return 'Half'
+    if ' page' in n or 'page ·' in n or n.split(' · ')[1:2] == ['page']:
+        return 'Page'
+    return 'widget'
+
+
+def screens(P, args):
+    """The screen index: what each library frame is, before anyone fetches it."""
+    from .library import Library
+    L = Library(P)
+    if not L.data:
+        print('No library.json: run `_uf.py library` first.'); return
+    area = _opt(args, '--area'); grp = _opt(args, '--group'); find = _opt(args, '--find')
+    top_only = '--top-only' in args
+    areas = _master_areas(P)
+    used = {}
+    for e in P.cfg.get('maps', {}).get('journeys', []) + P.cfg.get('maps', {}).get('flows', []):
+        for n in _board_nodes(P, os.path.basename(e['spec'])[:-3]):
+            used.setdefault(n, []).append(os.path.basename(e['spec'])[:-3])
+    hits = L.find(find, limit=40) if find else None
+    rows = [s for _, _, s in hits] if hits else L.screens()
+    print('ref · stop · area · kind · used on · node · name')
+    for s in rows:
+        a = areas.get(s['group'], '?')
+        t_only = s['group'] in TOP_FAMILIES
+        if (area and area.lower() not in a.lower()) or (grp and s['group'] != grp) or (top_only and not t_only):
+            continue
+        kind = 'top only (sheet empty: fill with sheet=)' if t_only else 'full screen'
+        print(f"{s['ref']:10} · {_stop(s['name']):6} · {a:30} · {kind:41} · {','.join(used.get(s['node'], [])) or '-':10} · {s['node']:7} · {s['name']}")
+
+
+def _frames_dir(P):
+    d = os.path.join(P.root, 'frames')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def frames(P, board_name):
+    need = os.path.join(P.root, 'out', board_name, 'frames_needed.txt')
+    todo = [l.strip() for l in open(need)] if os.path.exists(need) else []
+    have = set(f[:-4] for f in os.listdir(_frames_dir(P)))
+    todo = [n for n in todo if n not in have]
+    fid = P.library_file_id
+    if not todo:
+        print(f'{board_name}: every frame it needs is in the cache.'); return
+    print(f"{board_name}: {len(todo)} frames to fetch from the library file {fid}.")
+    print(f"For each: get_jsx(fileId \"{fid}\", nodeId, format \"inline-styles\"), then store it:")
+    print("  Claude Code: `_uf.py frames-from-transcript <this session's .jsonl>` stores them all at once, no retyping.")
+    print("  Otherwise: save each result to a file and `_uf.py frames-save <node id> <file>`.")
+    print('Nodes: ' + ' '.join(todo))
+
+
+def frames_save(P, node, path):
+    raw = open(path).read()
+    open(os.path.join(_frames_dir(P), f'{board_nid(node)}.jsx'), 'w').write(raw[raw.find('('):] if '(' in raw else raw)
+    print(f'saved {board_nid(node)}')
+
+
+def frames_from_transcript(P, path):
+    uses, n = {}, 0
+    for line in open(path):
+        if 'get_jsx' not in line and 'tool_result' not in line:
+            continue
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        c = d.get('message', {}).get('content')
+        if not isinstance(c, list):
+            continue
+        for x in c:
+            if x.get('type') == 'tool_use' and str(x.get('name', '')).endswith('get_jsx'):
+                inp = x.get('input', {})
+                if inp.get('fileId') in (None, P.library_file_id):
+                    uses[x['id']] = inp.get('nodeId')
+            elif x.get('type') == 'tool_result' and x.get('tool_use_id') in uses:
+                cont = x.get('content')
+                t_ = ''.join(y.get('text', '') for y in cont) if isinstance(cont, list) else str(cont)
+                if '(' in t_ and '<' in t_:
+                    open(os.path.join(_frames_dir(P), f'{board_nid(uses[x["tool_use_id"]])}.jsx'), 'w').write(t_[t_.find('('):])
+                    n += 1
+    print(f'{n} frames stored in {os.path.relpath(_frames_dir(P), P.root)}/')
+
+
 def _val(v):
     try:
         return json.loads(v)
@@ -474,6 +569,14 @@ def main(P, argv):
         layout_commit(P, args[0], args[1] if len(args) > 1 else None)
     elif cmd == 'promoted':
         promoted(P, args[0], args[1:])
+    elif cmd == 'screens':
+        screens(P, args)
+    elif cmd == 'frames':
+        frames(P, args[0])
+    elif cmd == 'frames-save':
+        frames_save(P, args[0], args[1])
+    elif cmd == 'frames-from-transcript':
+        frames_from_transcript(P, args[0])
     elif cmd == 'brief':
         brief(P)
     elif cmd == 'coverage':

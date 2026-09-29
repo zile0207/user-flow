@@ -33,10 +33,11 @@ class Map:
         self.E = []
 
     # ---------------- nodes (y is always the row's attach line)
-    def card(self, i, x, y, node, ref, title, note, jamie=False):
+    def card(self, i, x, y, node, ref, title, note, jamie=False, sheet=None):
         """A designed screen. node = the Paper node id of the real frame (from the library page, ideally),
         shown as a live copy, never an image. ref = the screen's id where it lives, like 'DO4' or '5.4·6'."""
-        self.N[i] = dict(kind='card', x=x, y=y - ATTACH, w=CW, h=CH, node=node, ref=ref, title=title, note=note, jamie=jamie)
+        # sheet: for a top-only frame (its sheet is empty), the frame whose sheet fills it: the tab the persona is on.
+        self.N[i] = dict(kind='card', x=x, y=y - ATTACH, w=CW, h=CH, node=node, ref=ref, title=title, note=note, jamie=jamie, sheet=sheet)
 
     def gap(self, i, x, y, title, need, gid=None, state='todo', later=False, chosen=None, round=None, node=None, ref=None, screen_ids=None):
         """A screen that needs design. gid = 'N2·3' (stable, never renumber). Always pass **P.g(gid).
@@ -160,7 +161,7 @@ class Map:
         if k == 'card':
             ref_col = base.ACCENT if d['jamie'] else MUTED
             return (f'<div layer-name="{d["ref"]} · {d["title"]}" style="position:absolute;left:{d["x"]}px;top:{d["y"]}px;width:200px;height:520px;background:#FFFFFF;border:1px solid {LINE};border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">'
-                    + base.screen(d['node'], 180) +
+                    + base.screen(d['node'], 180, sheet=d.get('sheet')) +
                     f'<div style="display:flex;flex-direction:column;gap:3px;padding:0 4px">'
                     + t(d['ref'], 11, 14, 700, ref_col, 'letter-spacing:0.06em;') + t(d['title'], 15, 19, 700, INK) + t(d['note'], 12, 16, 500, MUTED) + '</div></div>')
         if k == 'gap':

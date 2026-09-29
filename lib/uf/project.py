@@ -38,6 +38,13 @@ class Project:
         self.cfg = json.load(open(os.path.join(root, 'config.json')))
         th = self.cfg.get('theme', {})
         base.set_theme(th.get('accent'), th.get('font'), tuple(th['device']) if th.get('device') else None)
+        paper = self.cfg.get('sources', {}).get('paper', {})
+        self.library_file_id = paper.get('library_file_id') or paper.get('file_id')
+        base.CROSS_FILE = self.library_file_id != paper.get('file_id')
+        base.FRAMES_DIR = os.path.join(root, 'frames')
+        lib = os.path.join(root, 'library.json')
+        if os.path.exists(lib):
+            base.FRAME_NAMES = {s['node']: s['name'] for s in json.load(open(lib)).get('screens', [])}
         self.refs_dir = os.path.join(root, 'refs')
         self.specs_dir = os.path.join(root, 'specs')
         for d in (self.refs_dir, os.path.join(root, 'out')):

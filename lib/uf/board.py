@@ -46,6 +46,10 @@ def _num_fmt(v):
 def scale_html(html, s):
     """Draw an element s times larger: every px value, every svg's width and height (its viewBox stays, so its
     drawing scales too) and every zoom. A zoom that comes out at 1 is dropped: the frame shows at its real size."""
+    from .base import NOSCALE
+    if NOSCALE[0] in html:                   # real frames inside keep their real size
+        parts = re.split('(' + re.escape(NOSCALE[0]) + '.*?' + re.escape(NOSCALE[1]) + ')', html, flags=re.S)
+        return ''.join(p[len(NOSCALE[0]):-len(NOSCALE[1])] if p.startswith(NOSCALE[0]) else scale_html(p, s) for p in parts)
     if s == 1:
         return html
     out = re.sub(r'(-?\d+(?:\.\d+)?)px', lambda m: _num_fmt(float(m.group(1)) * s) + 'px', html)
@@ -159,6 +163,10 @@ class Board:
 
     def emit(self, W, H, page='maps'):
         W, H = round(W * self.scale), round(H * self.scale)
+        if base.MISSING:
+            need = os.path.join(self._dir(), 'frames_needed.txt')
+            open(need, 'w').write(''.join(f'{n}\n' for n in sorted(base.MISSING)))
+            print(f'  {len(base.MISSING)} frames not fetched yet (they show as markers): `_uf.py frames {self.name}`')
         full = self._dir('full'); sync = self._dir('sync')
         for d in (full, sync):
             for f in os.listdir(d):

@@ -21,16 +21,49 @@ def nid(node):
     return node if '-' in node else node + '-0'
 
 
-def screen(node, w, radius=10, layer='Screen'):
+# Cross-file mode (set by project.Project): the library lives in another Paper file, so screens are inlined as
+# converted real layers from design/user-flow/frames/<node>.jsx instead of live copies.
+CROSS_FILE = False
+FRAMES_DIR = None
+FRAME_NAMES = {}          # node → frame name (from library.json), for the copy's layer name
+MISSING = set()           # frames a render needed but the cache doesn't have yet
+NOSCALE = ('<!--uf:noscale-->', '<!--/uf:noscale-->')
+
+
+def _frame_html(node, sheet=None):
+    import os
+    from . import jsx
+    def load(n):
+        p = os.path.join(FRAMES_DIR or '', f'{nid(n)}.jsx')
+        if not os.path.exists(p):
+            MISSING.add(nid(n)); return None
+        raw = open(p).read()
+        return jsx.parse(raw[raw.find('('):] if '(' in raw else raw)
+    top = load(node)
+    fill = load(sheet) if sheet else None
+    if top is None or (sheet and fill is None):
+        return None
+    tree = jsx.composite(top, fill) if fill is not None else top
+    name = FRAME_NAMES.get(nid(node), nid(node)) + (f' + sheet of {FRAME_NAMES.get(nid(sheet), nid(sheet))}' if sheet else '')
+    return jsx.to_html(tree, size=(PW, None), layer=name)
+
+
+def screen(node, w, radius=10, layer='Screen', sheet=None):
     """A real screen on a board: a live copy of the Paper frame `node`, in a box w wide (in the board's spec units).
     Never an image. Boards are scaled (Board(scale=…)) so this box comes out at the device width: the zoom then
     cancels out and is dropped, and the frame sits at its real size, 1:1. The box clips frames taller than the device."""
     assert node, 'a screen needs the Paper node id of a real frame (boards never show images)'
     z = w / PW
     h = w * PH / PW
-    return (f'<div layer-name="{layer}" style="position:relative;width:{w}px;height:{h:.4f}px;flex-shrink:0;overflow:hidden;'
-            f'border-radius:{radius}px;background:#FFFFFF">'
-            f'<x-paper-clone node-id="{nid(node)}" style="position:absolute;left:0px;top:0px;zoom:{z:.6f}" /></div>')
+    box = (f'<div layer-name="{layer}" style="position:relative;width:{w}px;height:{h:.4f}px;flex-shrink:0;overflow:hidden;'
+           f'border-radius:{radius}px;background:#FFFFFF">')
+    if not CROSS_FILE and not sheet:
+        return box + f'<x-paper-clone node-id="{nid(node)}" style="position:absolute;left:0px;top:0px;zoom:{z:.6f}" /></div>'
+    html = _frame_html(node, sheet)
+    if html is None:            # not fetched yet: a visible marker, and the render reports what to fetch
+        return box + f'<div style="padding:8px;font-size:10px;line-height:13px;color:#B7791F">frame {nid(node)} not fetched</div></div>'
+    # the frame keeps its real size: the board's scale must not touch it, and the box comes out at the device width
+    return box + NOSCALE[0] + f'<div style="position:absolute;left:0px;top:0px;width:{PW}px;height:{PH}px;overflow:hidden">' + html + '</div>' + NOSCALE[1] + '</div>'
 
 
 def t(txt, size, lh, w, col, extra=''):

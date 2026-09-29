@@ -47,7 +47,7 @@ def parse(text, device_w=390):
         name, node, w, h = m.groups()
         parts = [p.strip() for p in re.split(r' · | — ', name) if p.strip()]
         group = _group(parts[0] if parts else name)
-        entry = {'node': node, 'name': name, 'ref': ref_of(name), 'group': group, 'title': ' · '.join(parts[1:]) or name}
+        entry = {'node': node, 'name': name, 'ref': ref_of(name), 'group': group, 'title': ' · '.join(parts[1:]) or name, 'w': w, 'h': h}
         try:
             is_screen = float(w) == device_w and (h == '?' or float(h) > 400)
         except ValueError:

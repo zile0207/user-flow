@@ -272,6 +272,27 @@ def test_stale_recopies_on_next_sync():
     assert '1 replace' in out, out
 
 
+def test_library_layout_moves_frames_and_copies_nothing():
+    root = fresh()
+    os.makedirs(os.path.join(root, 'out'), exist_ok=True)
+    tree = os.path.join(root, 'out', 'lib.txt')
+    open(tree, 'w').write('\n'.join([' "" (root_node_p-1-0) ?×?',
+        '  Frame "DO4 · Tap Use my location" (PY1-0) 390×844', '  Frame "DO2 · Second open" (Q2R-0) 390×844',
+        '  Frame "5.2 · 2 · Scrolled, grouped" (HQ8-0) 390×?', '  Frame "5.4 · ONE LINK" (BGG-0) 5560×?']))
+    run(root, '_uf.py', 'library', tree)
+    sys.path.insert(0, os.path.join(root, 'specs'))
+    from uf import project, library_layout
+    L = library_layout.LibraryLayout(project.load(root), cols=2, origin=(1000, 0), per_row=2)
+    L.area('Day one', 'DO', ['DO'], gaps=['N1·1'])
+    L.area('Explore', '5.2', ['5.2'])
+    plan = L.render('Test', 'today')
+    assert [m['node'] for m in plan['moves']] == ['Q2R-0', 'PY1-0', 'HQ8-0'], plan['moves']     # natural order, tall frames last
+    assert all('x-paper-clone' not in m['html'] and '<img' not in m['html'] for m in plan['made'])
+    assert sum(1 for m in plan['made'] if m['name'].startswith('master:gap')) == 1
+    out = run(root, '_uf.py', 'layout-ops', 'master')
+    assert '"PY1-0"' in out and 'create_artboard' in out
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):

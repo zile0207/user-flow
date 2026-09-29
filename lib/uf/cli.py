@@ -15,6 +15,7 @@ library <tree file>                     index the library page: get_tree_summary
 find <words…> | --gap <gap id>          library screens that match (confirm each with a screenshot)
 unplaced <board> <group,group…>         library screens in those groups that the board doesn't show yet
 stale <board> <node id…> | all          copies of these frames get re-copied on the next sync (after the source changed)
+layout-ops <board>                      the Paper calls that lay the library page out as the master map
 ops <board> [--discard]                 after --drift: the Paper calls for the sync plan, ready to paste
                                         (--discard also deletes the hand-added nodes drift found)
 """
@@ -201,6 +202,29 @@ def ops(P, args):
     print(f'\nThen: screenshot the changed nodes at scale 1, and `python3 specs/<spec>.py --commit {art}`.')
 
 
+def layout_ops(P, name):
+    out = os.path.join(P.root, 'out', name)
+    plan = json.load(open(os.path.join(out, 'layout.json')))
+    fid = P.cfg.get('sources', {}).get('paper', {}).get('file_id', '<file id>')
+    page = plan['page']
+    made_dir = os.path.join(out, 'made')
+    os.makedirs(made_dir, exist_ok=True)
+    for f in os.listdir(made_dir):
+        os.remove(os.path.join(made_dir, f))
+    print(f"1. Replace the old generated frames: get_tree_summary(root_node_{page}, depth 1); delete_nodes every child whose name starts with \"{plan['prefix']}\" (none the first time).")
+    moves = plan['moves']
+    for i in range(0, len(moves), 100):
+        print(f"\n2.{i // 100 + 1} update_styles (move library frames {i + 1}–{min(i + 100, len(moves))} of {len(moves)}):")
+        print(json.dumps({'fileId': fid, 'updates': [{'nodeIds': [m['node']], 'styles': {'left': f"{m['left']}px", 'top': f"{m['top']}px"}} for m in moves[i:i + 100]]}, ensure_ascii=False))
+    print(f"\n3. Make {len(plan['made'])} frames. For each line: create_artboard(fileId, pageId \"{page}\", name, width, height, backgroundColor transparent), "
+          "then write_html(insert-children, the new artboard, the file), then collect its id for the move below.")
+    for j, m in enumerate(plan['made']):
+        f = os.path.join(made_dir, f'{j:02d}.html'); open(f, 'w').write(m['html'])
+        print(f"  {m['name']} | {m['width']} x {m['height']} | left {m['left']} top {m['top']} | {f}")
+    print("\n4. One update_styles with every made frame's left/top (create_artboard ignores position).")
+    print(f"5. get_screenshot a few frames to check, then record it: config.json → maps.master = {{\"layout\": \"library\", \"spec\": \"specs/master.py\", \"page\": \"{page}\"}}.")
+
+
 def _val(v):
     try:
         return json.loads(v)
@@ -237,6 +261,8 @@ def main(P, argv):
         print(json.dumps([q for q in P.questions() if q['id'] == args[0]][0], ensure_ascii=False))
     elif cmd == 'ops':
         ops(P, args)
+    elif cmd == 'layout-ops':
+        layout_ops(P, args[0])
     elif cmd in ('library', 'find', 'unplaced'):
         from .library import Library
         L = Library(P)

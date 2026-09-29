@@ -5,6 +5,8 @@ description: Plot every screen in the app on one master map, grouped by area, wi
 
 # map-master
 
+**With a library page, the master map is that page, organised** (`uf.library_layout`): every screen frame moves into its area, in the order the persona meets them, under a title band, with a dashed frame for each screen still to design. Nothing is copied: copying every screen doubles the file and hits Paper's size limit. Frames keep everything but their position; the page's other frames (notes, bands) stay where they are. Say so and ask before the first layout, since it rearranges the page. Without a library page, use `uf.master.MasterMap` (a generated board of copies) and keep it small.
+
 The master map is the inventory. It shows every screen from every source, grouped by area, with every needs-design gap in its area. It has no arrows: journeys and flows carry those.
 
 **Plugin root:** this skill's real directory, two levels up. Read `references/nodes-and-layout.md` (Levels, Master map items) and `references/project-and-paper.md`.
@@ -37,7 +39,8 @@ M.area('Onboarding', 'A1 · app/(auth), app/(onboarding)', [('card', '1CH7', 'A1
 if __name__ == '__main__':
     M.render('<Project> · every screen', '<n> areas · <date>', '<one sentence: what this map is>')   # board 'master'
 ```
-- Render, then paint per `references/sync.md` → First paint (commit straight after pasting). The artboard is named `Master map`, on `sources.paper.master_page` if the project has one, otherwise first on the maps page. Record it in `config.json` → `maps.master` as `{"spec": "specs/master.py", "artboard": "<id>"}`. Later changes go through **sync-board**.
+- **Library layout:** `specs/master.py` uses `LibraryLayout(P, cols, origin, per_row)` and `L.area(name, sub, groups, gaps, entries)`. Render it, then `_uf.py layout-ops master` prints every Paper call (moves in batches of 100, then the bands and gap frames to make). Re-running replaces the generated frames (names start `master:`) and moves the frames again.
+- **Generated board (no library):** render, then paint per `references/sync.md` → First paint (commit straight after pasting). The artboard is named `Master map`, on `sources.paper.master_page` if the project has one, otherwise first on the maps page. Record it in `config.json` → `maps.master` as `{"spec": "specs/master.py", "artboard": "<id>"}`. Later changes go through **sync-board**.
 
 ## 4. Audit
 Run **audit-flow** on the master map at inventory level: areas with no empty, error or loading states, routes without designs, designs without routes. New gaps join the registry under the journey for that area, or `N0·n` if no journey covers it yet. Questions about the whole app go in as `_uf.py add-question M "<text>"` and render in the master map's panel.

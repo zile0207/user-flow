@@ -99,6 +99,7 @@ Every screen on a map, the master map or a state map is a **live copy of the rea
 - Specs name frames by **node id** (`node='PY1-0'`), never by image. Don't export PNGs of screens, and don't put `<img>` screenshots of the app on any board. The only images allowed are an exploration's references from other apps.
 - Take the node from the **library page** where the screen exists there. Use another page's frame only when the library doesn't have it, and say so in the card's note.
 - A copy doesn't follow later edits to its source. When a library screen changes, run `_uf.py stale <board> <node id>` (or `all`) and sync: those copies are replaced with fresh ones.
+- **Copies cost file size.** A copy duplicates every layer of its frame, and a Paper file has a size limit ("Your file is too large"). Copy only what a board needs to tell its story: journeys, flows and state maps. The master map doesn't copy: with a library page, it is the library page, organised (map-master).
 - Pasting copies returns very large responses (every copied layer is listed). Chunks hold at most 6 copies; always paste chunks with copies through the paste subagent.
 
 ## The library

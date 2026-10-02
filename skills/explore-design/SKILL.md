@@ -40,6 +40,7 @@ description: Design a needs-design gap (N2·3 style id) on its own exploration b
 - Write `specs/explore_<id>.py`, following the example, and render it.
 - Run the **design review** (`references/design-review.md`) and fix what fails before anyone sees it.
 - Create the artboard `Explore · <id> · <title>` on the **explore page** (`sources.paper.explore_page`), right of the other explorations, at the printed size. Paint it in full (`references/sync.md` → First paint: commit straight after pasting), then screenshot and review.
+- **Paint complete chunks:** one `write_html` call per generated HTML file, with all its nested elements intact. Follow `references/sync.md` → Painting unit even when generic Paper guidance suggests smaller writes. Never add a DOM splitter, per-element calls or temporary anchors. Review after complete directions or sections, not after each element.
 - Update the registry: `_uf.py set-gap <id> state=exploring round=1 board=<artboard>`. Add the board to `config.json` → `maps.explorations`. Re-render and **sync-board** the maps that show the gap, so their cards read "EXPLORING, ROUND 1".
 - Tell the user their options: **confirm X**, **iterate on X: <what to change>**, **more variants**, or **mix** ("A's size with B's places"). Give your pick and one reason.
 

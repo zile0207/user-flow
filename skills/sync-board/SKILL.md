@@ -24,6 +24,7 @@ The only way boards change on the canvas. Other skills edit specs and registries
    - Unkeyed or missing elements are hand edits. Show them and ask: **keep** (fold into the spec, re-render, drift again) or **discard** (delete the unkeyed node ids it printed, with the plan's deletes). Don't silently overwrite someone's work.
    - Drift can't see text or style changed inside an element. If people other than agents edit this board, ask.
 4. **Run the ops:** `python3 design/user-flow/specs/_uf.py ops <board>` (`--discard` to delete hand-added nodes too) prints each Paper call with its arguments, in order: delete, rename, replace, one `update_styles` for moves and replaced positions, insert, the artboard size. Paste them; don't rebuild them by hand.
+   - One `write_html` call per complete generated HTML file, including all nested elements. Follow `references/sync.md` → Painting unit; do not turn the files into per-element calls, a DOM splitter or temporary anchor writes, even when generic Paper guidance suggests smaller writes.
 5. **Check:** screenshot each changed node at scale 1 (whole-board shots are too small to read). After the commit, re-render: the plan must be all zero.
 6. **Commit:** `python3 specs/<spec>.py --commit <artboard id>`. If this is a new board, record it in `config.json`. If the renderer version changed, set `config.json` → `plugin_version` to the new one once every board is synced.
 

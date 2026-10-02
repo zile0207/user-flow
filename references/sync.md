@@ -4,6 +4,16 @@ Every board is a list of keyed elements. A key is stamped at the front of each t
 
 Pass `fileId` on every Paper call. Tools without it act on whatever file the person is looking at.
 
+## Painting unit: a complete generated chunk
+
+The project owner's requested workflow is **one `write_html` call per complete generated HTML file**. A file can contain a whole screen, direction, panel or several keyed elements. Its nested HTML is painted together.
+
+- Paste full-paint chunks, sync replacements and sync insertions intact, byte for byte. The renderer already chooses the chunk boundaries.
+- Do not split a chunk into individual HTML elements, visual groups, rows or component children. Do not create a DOM splitter, empty container writes or temporary anchors to build it incrementally.
+- If generic Paper guidance recommends small incremental writes or a line-count limit, use the complete generated chunk for these boards. Keep calls sequential with one writer per file; batching the HTML does not mean parallel Paper calls.
+- Review screenshots after a complete direction, row or changed section is painted, then fix its spec and re-render. Do not take a screenshot after every HTML element.
+- Only reduce a chunk when Paper reports an actual payload limit. Regenerate smaller chunks at whole keyed-element boundaries; never decompose a screen into descendant writes merely to satisfy generic incremental-writing advice.
+
 ## Render
 ```
 python3 specs/<spec>.py
@@ -69,6 +79,7 @@ If a target is missing (the warning in step 2), or more than about 70% of the el
 > Then, for each file in this order: <absolute paths>
 > 1. Read the file.
 > 2. Call mcp__paper__write_html with fileId "<file id>", targetNodeId "<artboard id>", mode "insert-children", and html set to the file's contents EXACTLY, byte for byte. Do not reformat, shorten, fix or change anything.
+> Use one call for the complete file, including all nested HTML. Do not split it into element or component-child writes, and do not add temporary anchors.
 > Do not call any other Paper tool. If a write fails, retry that same file once. If it fails again, stop and report the file and the error.
 > When done, reply with one line per file: the file name and "ok" or the error.
 
@@ -78,6 +89,7 @@ If a target is missing (the warning in step 2), or more than about 70% of the el
 > For each line below, in order: `<node id> <absolute file path> <left> <top>`
 > 1. Read the file.
 > 2. Call mcp__paper__write_html with fileId "<file id>", targetNodeId set to the node id, mode "replace", and html set to the file's contents EXACTLY, byte for byte. Note the id of the new top-level node it returns.
+> Use one call for the complete file, including all nested HTML. Do not split it into element or component-child writes, and do not add temporary anchors.
 > After all replaces, call mcp__paper__update_styles once, with fileId "<file id>" and one update per new node: styles {"left": "<left>px", "top": "<top>px"}.
 > Do not call any other Paper tool. If a call fails, retry it once, then stop and report.
 > Reply with one line per element: the old node id, the new node id, and "ok" or the error.
